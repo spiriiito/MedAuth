@@ -1,0 +1,42 @@
+.env
+.DS_Store
+node_modules/
+src/db/*.db
+keys/**/*.key
+keys/**/*.pem
+security/pki/**/*.key.pem
+security/pki/**/*.key
+security/pki/**/ca-key.pem
+security/pki/**/*.csr
+security/pki/server/
+security/pki/clients/
+security/pki/hospital-ca/
+security/pki/test-cas/
+security/pki/rogue/
+clients/identities/
+storage/*.bin
+*.db-wal
+*.db-shm
+blockchain/runtime/fabric-samples/
+blockchain/runtime/install-fabric.sh
+blockchain/runtime/**/*.pem
+blockchain/runtime/**/*.key
+blockchain/runtime/**/*_sk
+blockchain/runtime/**/crypto-config/
+blockchain/runtime/**/organizations/
+blockchain/runtime/**/channel-artifacts/
+blockchain/runtime/**/*.tar.gz
+blockchain/runtime/**/*.log
+blockchain/runtime/**/wallet/
+blockchain/runtime/**/production/
+blockchain/chaincode/**/node_modules/
+
+# Local / generated project data
+keys/
+storage/
+demo/
+security/pki/
+
+# Local backups and reports
+ledger-hash-backup-32.txt
+secure_medical_upload_report (1).pdf

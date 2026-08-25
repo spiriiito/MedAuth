@@ -1,0 +1,4588 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MedAuth Security Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0a0f1e;
+      --surface: #111827;
+      --card: #1a2236;
+      --accent: #3b82f6;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --border: rgba(156, 163, 175, 0.18);
+      --shadow: rgba(59, 130, 246, 0.26);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      background:
+        linear-gradient(rgba(59, 130, 246, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.045) 1px, transparent 1px),
+        var(--bg);
+      background-size: 34px 34px;
+    }
+
+    body.authenticated { overflow-x: hidden; }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 13px;
+      color: var(--text);
+      background: rgba(10, 15, 30, 0.72);
+      outline: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(59, 130, 246, 0.85);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+    }
+
+    input[readonly] {
+      color: var(--muted);
+      background: rgba(156, 163, 175, 0.08);
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    th, td {
+      padding: 13px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.88rem;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      color: var(--muted);
+      background: #151e31;
+      font-size: 0.78rem;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    tr.failure-row {
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .hidden { display: none !important; }
+
+    .auth-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .auth-card {
+      width: min(440px, 100%);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px;
+      background: rgba(17, 24, 39, 0.94);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+      transition: box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .auth-card:hover, .card:hover {
+      border-color: rgba(59, 130, 246, 0.42);
+      box-shadow: 0 0 30px var(--shadow);
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.17);
+      color: var(--accent);
+    }
+
+    .brand-icon.logo-svg {
+      width: 44px;
+      height: 44px;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .brand-icon.logo-svg svg {
+      width: 42px;
+      height: 42px;
+      display: block;
+    }
+
+    .brand-name {
+      margin: 0;
+      font-size: 1.45rem;
+      letter-spacing: 0;
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 5px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(10, 15, 30, 0.64);
+    }
+
+    .auth-tab {
+      min-height: 42px;
+      border-radius: 6px;
+      color: var(--muted);
+      background: transparent;
+      font-weight: 800;
+    }
+
+    .auth-tab.active {
+      color: var(--text);
+      background: var(--accent);
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 15px;
+    }
+
+    .password-rules {
+      display: grid;
+      gap: 6px;
+      margin: -4px 0 2px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      background: rgba(10, 15, 30, 0.42);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .password-rules strong {
+      color: var(--text);
+      font-size: 0.84rem;
+    }
+
+    .primary-btn, .secondary-btn, .icon-btn, .nav-btn, .logout-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border-radius: 8px;
+      min-height: 42px;
+      font-weight: 800;
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 12px 15px;
+      background: var(--accent);
+    }
+
+    .primary-btn:hover, .secondary-btn:hover, .icon-btn:hover, .nav-btn:hover, .logout-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      padding: 10px 13px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: rgba(26, 34, 54, 0.88);
+    }
+
+    .icon-btn {
+      width: 36px;
+      min-height: 34px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(10, 15, 30, 0.42);
+    }
+
+    .icon-btn:hover {
+      color: var(--text);
+      border-color: rgba(59, 130, 246, 0.52);
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      background: rgba(17, 24, 39, 0.97);
+    }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 14px;
+      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(26, 34, 54, 0.8);
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--success);
+      background: rgba(16, 185, 129, 0.14);
+    }
+
+    .profile small, .section-kicker {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .profile strong {
+      display: block;
+      max-width: 168px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: monospace;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-btn, .logout-btn {
+      width: 100%;
+      justify-content: flex-start;
+      padding: 12px 13px;
+      color: var(--muted);
+      background: transparent;
+    }
+
+    .nav-btn.active {
+      color: var(--text);
+      background: rgba(59, 130, 246, 0.16);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .logout-btn {
+      margin-top: auto;
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.22);
+      background: rgba(239, 68, 68, 0.06);
+    }
+
+    .main {
+      min-width: 0;
+      padding: 26px;
+    }
+
+    .topbar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .view-header h2 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .view-header p {
+      margin: 5px 0 0;
+      color: var(--muted);
+    }
+
+    .upload-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      background: rgba(26, 34, 54, 0.94);
+      transition: box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .card h3 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+    }
+
+    .drop-zone {
+      display: grid;
+      place-items: center;
+      gap: 9px;
+      min-height: 170px;
+      margin-bottom: 16px;
+      border: 2px dashed rgba(59, 130, 246, 0.45);
+      border-radius: 8px;
+      color: var(--muted);
+      background: rgba(59, 130, 246, 0.06);
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .drop-zone.dragover {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .drop-zone i {
+      color: var(--accent);
+      font-size: 2.2rem;
+    }
+
+    .file-meta {
+      display: none;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(10, 15, 30, 0.5);
+    }
+
+    .file-meta.visible {
+      display: grid;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    .mono-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .mono {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-family: monospace;
+      color: #dbeafe;
+    }
+
+    .truncate-mono {
+      font-family: monospace;
+      color: #dbeafe;
+      white-space: nowrap;
+    }
+
+    .pipeline {
+      display: grid;
+      gap: 13px;
+    }
+
+    .pipeline-node {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(10, 15, 30, 0.42);
+    }
+
+    .pipeline-node i {
+      width: 22px;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    .pipeline-node.pass i { color: var(--success); }
+    .pipeline-node.fail i { color: var(--danger); }
+
+    .ledger-card {
+      margin-top: 18px;
+    }
+
+    .ledger-output {
+      min-height: 54px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(10, 15, 30, 0.5);
+    }
+
+    .table-card {
+      overflow-x: auto;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .badge.success {
+      color: var(--success);
+      background: #10b98120;
+    }
+
+    .badge.danger {
+      color: var(--danger);
+      background: #ef444420;
+    }
+
+    .badge.warning {
+      color: var(--warning);
+      background: #f59e0b20;
+    }
+
+    .badge.info {
+      color: var(--accent);
+      background: #3b82f620;
+    }
+
+    .shield-ok { color: var(--success); }
+    .shield-bad { color: var(--danger); }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-weight: 800;
+      user-select: none;
+    }
+
+    .switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      display: inline-block;
+    }
+
+    .switch input {
+      width: 0;
+      height: 0;
+      opacity: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(156, 163, 175, 0.28);
+      transition: background 160ms ease;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: var(--text);
+      transition: transform 160ms ease;
+    }
+
+    .switch input:checked + .slider {
+      background: var(--success);
+    }
+
+    .switch input:checked + .slider::before {
+      transform: translateX(22px);
+    }
+
+    .details-cell {
+      cursor: pointer;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .json-block {
+      display: none;
+      max-height: 210px;
+      overflow: auto;
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #d1fae5;
+      background: rgba(10, 15, 30, 0.72);
+      font-family: monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+    }
+
+    .json-block.open {
+      display: block;
+    }
+
+    .ledger-status-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .status-banner {
+      margin-bottom: 16px;
+    }
+
+    .ledger-hero {
+      position: relative;
+      min-height: 166px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      overflow: hidden;
+      padding: 28px 34px;
+      border: 1px solid #b8e6d8;
+      border-radius: 10px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(236, 253, 245, 0.78));
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+    }
+
+    .ledger-hero.compromised {
+      border-color: #f0c9cf;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 241, 242, 0.82));
+    }
+
+    .ledger-hero::after {
+      display: none;
+    }
+
+    .ledger-hero.compromised::after {
+      display: none;
+    }
+
+    .ledger-hero-icon {
+      position: relative;
+      z-index: 1;
+      width: 82px;
+      height: 82px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid rgba(15, 118, 110, 0.16);
+      border-radius: 999px;
+      color: #047857;
+      background: #e7f8f1;
+      box-shadow: inset 0 0 0 8px rgba(255, 255, 255, 0.58);
+    }
+
+    .ledger-hero-icon i:first-child {
+      font-size: 2.35rem;
+    }
+
+    .ledger-hero-icon .ledger-hero-mark {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border: 3px solid #e7f8f1;
+      border-radius: 999px;
+      color: #ffffff;
+      background: #059669;
+      font-size: 0.7rem;
+    }
+
+    .ledger-hero.compromised .ledger-hero-icon {
+      border-color: rgba(190, 18, 60, 0.16);
+      color: #be123c;
+      background: #fff1f2;
+    }
+
+    .ledger-hero.compromised .ledger-hero-mark {
+      border-color: #fff1f2;
+      background: #be123c;
+    }
+
+    .ledger-hero-copy {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 6px;
+      max-width: 680px;
+    }
+
+    .ledger-hero-copy strong {
+      display: block;
+      color: #047857;
+      font-size: clamp(2.75rem, 5vw, 3.5rem);
+      line-height: 0.98;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .ledger-hero.compromised .ledger-hero-copy strong {
+      color: #be123c;
+      font-size: clamp(2.25rem, 4.3vw, 3.2rem);
+    }
+
+    .ledger-hero-copy p {
+      margin: 0;
+      color: #172033;
+      font-size: 1rem;
+      line-height: 1.42;
+    }
+
+    #view-ledger #verify-ledger {
+      width: 100%;
+      min-height: 54px;
+      margin-top: 10px;
+      border-radius: 10px;
+      color: #ffffff;
+      background: linear-gradient(135deg, #0f766e, #10b981);
+      box-shadow: 0 12px 24px rgba(15, 118, 110, 0.2);
+      font-size: 0.98rem;
+      font-weight: 900;
+    }
+
+    #view-ledger #verify-ledger:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, #0b5f59, #059669);
+      box-shadow: 0 16px 30px rgba(15, 118, 110, 0.26);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(10, 15, 30, 0.42);
+    }
+
+    .stat small {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .doc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .doc-card i {
+      color: var(--accent);
+      font-size: 1.6rem;
+      margin-bottom: 12px;
+    }
+
+    .doc-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .loader-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(10, 15, 30, 0.72);
+      backdrop-filter: blur(3px);
+      font-size: 2.2rem;
+      color: var(--accent);
+    }
+
+    .loader-overlay.active {
+      display: grid;
+    }
+
+    .records-mode-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .records-mode-tab {
+      min-height: 42px;
+      padding: 9px 16px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: var(--surface);
+    }
+
+    .records-mode-tab.active {
+      border-color: rgba(15, 118, 110, 0.4);
+      color: var(--accent);
+      background: #ecfdf5;
+      box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+    }
+
+    .clinical-search-card {
+      margin-bottom: 16px;
+    }
+
+    .clinical-search-copy {
+      margin: 4px 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .clinical-search-form {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .clinical-search-form label {
+      margin: 0;
+    }
+
+    .clinical-results-summary {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .access-badge,
+    .readonly-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin: 2px 5px 2px 0;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .access-badge.owner { color: #047857; background: #d1fae5; }
+    .access-badge.assigned { color: #1d4ed8; background: #dbeafe; }
+    .access-badge.cross { color: #9a3412; background: #ffedd5; }
+    .readonly-badge { color: #9f1239; background: #ffe4e6; }
+
+    .clinical-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 180px;
+    }
+
+    .clinical-actions button {
+      min-height: 34px;
+      padding: 6px 9px;
+      font-size: 0.76rem;
+    }
+
+    .clinical-modal {
+      width: min(1100px, 100%);
+    }
+
+    .clinical-view-metadata {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .clinical-view-metadata div {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(15, 118, 110, 0.04);
+    }
+
+    .clinical-view-metadata small,
+    .clinical-view-metadata strong {
+      display: block;
+    }
+
+    .clinical-view-metadata small {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .clinical-view-frame {
+      width: 100%;
+      min-height: 58vh;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    @media (max-width: 760px) {
+      .clinical-search-form { grid-template-columns: 1fr; }
+      .clinical-view-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .clinical-view-frame { min-height: 52vh; }
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(0, 0, 0, 0.62);
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(780px, 100%);
+      max-height: 88vh;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-body {
+      padding: 18px;
+    }
+
+    .verify-banner {
+      display: grid;
+      place-items: center;
+      min-height: 72px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      font-size: 1.55rem;
+      font-weight: 900;
+    }
+
+    .verify-banner.ok {
+      color: var(--success);
+      background: rgba(16, 185, 129, 0.12);
+    }
+
+    .verify-banner.fail {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.12);
+    }
+
+    .check-row {
+      display: grid;
+      grid-template-columns: 26px minmax(130px, 0.7fr) minmax(0, 1.5fr);
+      gap: 11px;
+      align-items: start;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .check-row i.ok { color: var(--success); }
+    .check-row i.fail { color: var(--danger); }
+
+    .hash-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .hash-box {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(10, 15, 30, 0.46);
+    }
+
+    .toast-stack {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 60;
+      display: grid;
+      gap: 10px;
+      width: min(380px, calc(100vw - 36px));
+    }
+
+    .toast {
+      display: grid;
+      grid-template-columns: 22px 1fr 28px;
+      gap: 10px;
+      align-items: start;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: rgba(17, 24, 39, 0.98);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.info { border-left-color: var(--accent); }
+    .toast .toast-close { min-height: 28px; background: transparent; color: var(--muted); }
+
+    @media (max-width: 980px) {
+      .upload-grid, .doc-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: fixed;
+        z-index: 30;
+        left: 0;
+        top: 0;
+        width: min(300px, 86vw);
+        transform: translateX(-105%);
+        transition: transform 180ms ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .topbar {
+        display: flex;
+      }
+
+      .main {
+        padding: 18px;
+      }
+
+      .view-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .form-grid, .stats-grid, .hash-pair, .check-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Clinical light-mode redesign */
+    :root {
+      --bg: #f4f8f7;
+      --surface: #ffffff;
+      --surface-soft: #f8fbfa;
+      --card: #ffffff;
+      --accent: #0f766e;
+      --accent-2: #10b981;
+      --accent-3: #14b8a6;
+      --success: #059669;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #dce8e5;
+      --border-strong: #b8d4ce;
+      --shadow: rgba(15, 118, 110, 0.12);
+      --shadow-lg: 0 24px 70px rgba(15, 23, 42, 0.12);
+    }
+
+    html {
+      background: var(--bg);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(20, 184, 166, 0.16), transparent 34vw),
+        linear-gradient(180deg, #fbfefd 0%, var(--bg) 48%, #eef6f4 100%);
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button { background: transparent; }
+
+    input, select, textarea {
+      padding: 11px 12px;
+      color: var(--text);
+      background: #ffffff;
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(15, 118, 110, 0.72);
+      box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.14);
+    }
+
+    input[readonly] {
+      color: #475569;
+      background: #f1f7f5;
+    }
+
+    label {
+      color: #334155;
+      font-size: 0.82rem;
+    }
+
+    th {
+      color: #475569;
+      background: #f4faf8;
+      font-size: 0.76rem;
+    }
+
+    tbody tr:hover { background: #f8fcfb; }
+
+    tr.failure-row { background: rgba(220, 38, 38, 0.04); }
+
+    .auth-shell {
+      padding: 32px;
+      background:
+        linear-gradient(115deg, rgba(15, 118, 110, 0.08), rgba(255, 255, 255, 0.35)),
+        #f3f8f7;
+    }
+
+    .auth-card {
+      width: min(1120px, 100%);
+      min-height: min(720px, calc(100vh - 64px));
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(380px, 0.92fr);
+      overflow: hidden;
+      padding: 0;
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .auth-visual {
+      position: relative;
+      min-height: 100%;
+      display: flex;
+      align-items: flex-end;
+      padding: 34px;
+      color: #ffffff;
+      background:
+        linear-gradient(180deg, rgba(8, 47, 73, 0.08), rgba(6, 78, 59, 0.76)),
+        url("https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1400&q=80") center / cover;
+    }
+
+    .auth-visual::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(4, 120, 87, 0.42), transparent 48%),
+        linear-gradient(180deg, transparent 34%, rgba(2, 44, 34, 0.82));
+      pointer-events: none;
+    }
+
+    .auth-visual-copy {
+      position: relative;
+      z-index: 1;
+      width: min(470px, 100%);
+    }
+
+    .auth-visual-copy span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 7px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(10px);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .auth-visual-copy h2 {
+      margin: 0 0 10px;
+      max-width: 12ch;
+      color: #ffffff;
+      font-size: clamp(2.2rem, 5vw, 4.25rem);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+
+    .auth-visual-copy p {
+      margin: 0;
+      max-width: 56ch;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .auth-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(28px, 5vw, 56px);
+      background:
+        linear-gradient(180deg, rgba(236, 253, 245, 0.58), transparent 42%),
+        var(--surface);
+    }
+
+    .auth-card:hover, .card:hover {
+      border-color: var(--border-strong);
+      box-shadow: 0 18px 44px var(--shadow);
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #d1fae5, #ccfbf1);
+      color: var(--accent);
+      box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.14);
+    }
+
+    .brand-icon.logo-svg {
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .brand-name {
+      font-size: 1.38rem;
+      line-height: 1.05;
+    }
+
+    .auth-tabs {
+      margin-bottom: 20px;
+      background: #eef7f5;
+    }
+
+    .password-rules {
+      background: #f8fcfb;
+    }
+
+    .auth-tab.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 10px 24px rgba(16, 185, 129, 0.22);
+    }
+
+    .primary-btn, .secondary-btn, .icon-btn, .nav-btn, .logout-btn {
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    .primary-btn {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 14px 30px rgba(15, 118, 110, 0.22);
+    }
+
+    .secondary-btn {
+      color: var(--text);
+      background: #ffffff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .secondary-btn:hover {
+      border-color: var(--border-strong);
+      background: #f8fcfb;
+    }
+
+    .icon-btn {
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    .icon-btn:hover {
+      color: var(--accent);
+      border-color: var(--border-strong);
+      box-shadow: 0 8px 18px rgba(15, 118, 110, 0.12);
+    }
+
+    .app-shell {
+      grid-template-columns: 284px 1fr;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.68), transparent 280px),
+        var(--bg);
+    }
+
+    .sidebar {
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 12px 0 34px rgba(15, 23, 42, 0.04);
+      backdrop-filter: blur(18px);
+    }
+
+    .profile {
+      gap: 12px;
+      background: linear-gradient(135deg, #ffffff, #f0fbf8);
+    }
+
+    .avatar {
+      width: 48px;
+      height: 56px;
+      overflow: hidden;
+      flex: 0 0 auto;
+      border: 2px solid #ffffff;
+      border-radius: 8px;
+      color: transparent;
+      background: #d9f5ee;
+      box-shadow: 0 0 0 1px var(--border-strong), 0 10px 22px rgba(15, 118, 110, 0.12);
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .profile strong { color: #0f172a; }
+
+    .nav-btn i, .logout-btn i {
+      width: 18px;
+      color: currentColor;
+      text-align: center;
+    }
+
+    .nav-btn.active {
+      color: var(--text);
+      background: #e8f8f4;
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .nav-btn:hover {
+      color: var(--accent);
+      background: #f4faf8;
+    }
+
+    .logout-btn {
+      border-color: rgba(220, 38, 38, 0.16);
+      background: rgba(254, 242, 242, 0.78);
+    }
+
+    .sidebar .logout-btn {
+      justify-content: flex-start;
+      min-height: 44px;
+      padding: 0 4px;
+      border-color: transparent;
+      color: var(--accent);
+      background: transparent;
+      box-shadow: none;
+      font-weight: 800;
+    }
+
+    .sidebar .logout-btn:hover {
+      color: #065f46;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .main { padding: 30px; }
+
+    .view-header {
+      margin-bottom: 20px;
+    }
+
+    .view-header h2 {
+      font-size: 1.55rem;
+      letter-spacing: 0;
+    }
+
+    .upload-grid {
+      gap: 20px;
+    }
+
+    .card {
+      padding: 20px;
+      background: var(--card);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+    }
+
+    .drop-zone {
+      position: relative;
+      min-height: 212px;
+      overflow: hidden;
+      border: 1px dashed rgba(15, 118, 110, 0.45);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 253, 250, 0.82)),
+        url("https://images.unsplash.com/photo-1581093458791-9d09f6730b12?auto=format&fit=crop&w=900&q=80") center / cover;
+    }
+
+    .drop-zone::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(15, 118, 110, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 118, 110, 0.055) 1px, transparent 1px),
+        rgba(255, 255, 255, 0.78);
+      background-size: 26px 26px;
+    }
+
+    .drop-zone > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .drop-zone.dragover {
+      border-color: var(--success);
+      box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.16), 0 16px 34px rgba(16, 185, 129, 0.12);
+    }
+
+    .drop-zone i {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--accent);
+      background: #ffffff;
+      box-shadow: 0 10px 24px rgba(15, 118, 110, 0.12);
+      font-size: 1.85rem;
+    }
+
+    .drop-zone strong {
+      color: var(--text);
+      font-size: 1.02rem;
+    }
+
+    #view-upload {
+      color: #0f172a;
+    }
+
+    #view-upload .upload-page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    #view-upload .upload-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    #view-upload .upload-title-row i {
+      color: var(--success);
+    }
+
+    #view-upload .upload-page-header h2 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 1.58rem;
+      line-height: 1.18;
+    }
+
+    #view-upload .upload-page-header p {
+      margin: 0;
+      color: #64748b;
+    }
+
+    #view-upload .secure-session-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      flex: 0 0 auto;
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid #dce8e5;
+      border-radius: 999px;
+      color: #0f172a;
+      background: #ffffff;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    #view-upload .secure-session-badge i {
+      color: var(--success);
+    }
+
+    #view-upload .session-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.12);
+    }
+
+    #view-upload .upload-grid {
+      grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.9fr);
+      gap: 22px;
+    }
+
+    #view-upload .card {
+      border: 1px solid #dce8e5;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 16px 38px rgba(15, 23, 42, 0.06);
+    }
+
+    #view-upload .upload-card {
+      padding: 22px;
+    }
+
+    #view-upload .drop-zone {
+      min-height: 260px;
+      margin-bottom: 18px;
+      border: 1.5px dashed rgba(15, 118, 110, 0.42);
+      border-radius: 8px;
+      background:
+        linear-gradient(rgba(15, 118, 110, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 118, 110, 0.045) 1px, transparent 1px),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(236, 253, 245, 0.82));
+      background-size: 28px 28px, 28px 28px, auto;
+    }
+
+    #view-upload .drop-zone::before {
+      display: none;
+    }
+
+    #view-upload .drop-zone i {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      margin-bottom: 6px;
+      color: #0f172a;
+      background: #ffffff;
+      font-size: 2rem;
+    }
+
+    #view-upload .drop-zone i::after {
+      content: "\f067";
+      width: 24px;
+      height: 24px;
+      display: inline-grid;
+      place-items: center;
+      right: -7px;
+      bottom: -4px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--success);
+      font-family: "Font Awesome 6 Free";
+      font-size: 0.75rem;
+      font-weight: 900;
+      position: absolute;
+    }
+
+    #view-upload .drop-zone strong {
+      color: #0f172a;
+      font-size: 1.08rem;
+    }
+
+    #view-upload .drop-zone span {
+      color: #0f766e;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    #view-upload .drop-zone small {
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+
+    #view-upload #file-meta {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding: 15px 16px;
+      border: 1px solid #dce8e5;
+      border-radius: 8px;
+      background: #f1fbf7;
+    }
+
+    #view-upload .file-preview-icon {
+      width: 48px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #e5e7eb;
+      border-radius: 7px;
+      color: var(--danger);
+      background: #ffffff;
+      font-size: 1.2rem;
+    }
+
+    #view-upload .file-preview-main {
+      min-width: 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    #view-upload .file-preview-title {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    #view-upload #file-name {
+      color: #0f172a;
+      overflow-wrap: anywhere;
+    }
+
+    #view-upload .file-status {
+      color: var(--success);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    #view-upload .file-hash-row {
+      color: #64748b;
+      font-size: 0.78rem;
+    }
+
+    #view-upload .file-hash-row .mono {
+      color: #0f766e;
+      font-size: 0.78rem;
+    }
+
+    #view-upload .file-check {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--success);
+      font-size: 0.9rem;
+    }
+
+    #view-upload .form-grid {
+      gap: 15px 16px;
+      margin-bottom: 20px;
+    }
+
+    #view-upload label {
+      color: #475569;
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    #view-upload input,
+    #view-upload select {
+      min-height: 54px;
+      border-color: #dce8e5;
+      color: #0f172a;
+      background: #ffffff;
+      font-weight: 700;
+    }
+
+    #view-upload input:focus,
+    #view-upload select:focus {
+      border-color: rgba(15, 118, 110, 0.78);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+    }
+
+    #view-upload input[readonly] {
+      color: #475569;
+      background: #f4f8f7;
+    }
+
+    #view-upload .upload-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    #view-upload .upload-actions .primary-btn {
+      width: auto;
+      min-height: 52px;
+      padding: 13px 24px;
+      background: #059669;
+      box-shadow: 0 14px 28px rgba(5, 150, 105, 0.22);
+    }
+
+    #view-upload .upload-actions .secondary-btn {
+      min-height: 52px;
+      padding: 13px 22px;
+      color: #334155;
+      background: #ffffff;
+    }
+
+    #view-upload .upload-note {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: #64748b;
+      font-size: 0.82rem;
+    }
+
+    #view-upload .upload-note i {
+      color: #94a3b8;
+    }
+
+    #view-upload .right-column {
+      display: grid;
+      gap: 18px;
+    }
+
+    #view-upload .pipeline-card h3,
+    #view-upload .secure-design-card h3,
+    #view-upload #ledger-entry-card h3 {
+      margin-bottom: 18px;
+      color: #0f172a;
+      font-size: 1.02rem;
+    }
+
+    #view-upload #pipeline {
+      gap: 0;
+      margin-bottom: 16px;
+    }
+
+    #view-upload .pipeline-node {
+      position: relative;
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) 28px;
+      gap: 10px;
+      align-items: start;
+      padding: 0 0 22px;
+      border: 0;
+      background: transparent;
+    }
+
+    #view-upload .pipeline-node:last-child {
+      padding-bottom: 0;
+    }
+
+    #view-upload .pipeline-node::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 23px;
+      bottom: 0;
+      width: 2px;
+      background: #d9eee8;
+    }
+
+    #view-upload .pipeline-node:last-child::before {
+      display: none;
+    }
+
+    #view-upload .pipeline-status {
+      position: relative;
+      z-index: 1;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #dce8e5;
+      border-radius: 999px;
+      color: #94a3b8;
+      background: #ffffff;
+      font-size: 0.78rem;
+    }
+
+    #view-upload .pipeline-node.pass .pipeline-status {
+      border-color: var(--success);
+      color: #ffffff;
+      background: var(--success);
+    }
+
+    #view-upload .pipeline-node.fail .pipeline-status {
+      border-color: var(--danger);
+      color: #ffffff;
+      background: var(--danger);
+    }
+
+    #view-upload .pipeline-copy {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    #view-upload .pipeline-copy strong {
+      color: #0f172a;
+      font-size: 0.9rem;
+    }
+
+    #view-upload .pipeline-copy span {
+      color: #64748b;
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    #view-upload .pipeline-result-icon {
+      justify-self: end;
+      color: #cbd5e1;
+      font-size: 1.05rem;
+    }
+
+    #view-upload .pipeline-node.pass .pipeline-result-icon {
+      color: var(--success);
+    }
+
+    #view-upload .pipeline-node.fail .pipeline-result-icon {
+      color: var(--danger);
+    }
+
+    #view-upload .pipeline-result-panel {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid #dce8e5;
+      border-radius: 8px;
+      background: #f8fcfb;
+    }
+
+    #view-upload .pipeline-result-panel.pass {
+      border-color: rgba(5, 150, 105, 0.2);
+      background: #f0fdf4;
+    }
+
+    #view-upload .pipeline-result-panel.fail {
+      border-color: rgba(220, 38, 38, 0.2);
+      background: #fff1f2;
+    }
+
+    #view-upload .pipeline-result-panel i {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      color: var(--success);
+      background: #ffffff;
+      font-size: 1.1rem;
+    }
+
+    #view-upload .pipeline-result-panel.fail i {
+      color: var(--danger);
+    }
+
+    #view-upload .pipeline-result-panel strong {
+      display: block;
+      margin-bottom: 2px;
+      color: #0f766e;
+    }
+
+    #view-upload .pipeline-result-panel.fail strong {
+      color: var(--danger);
+    }
+
+    #view-upload .pipeline-result-panel span {
+      color: #64748b;
+      font-size: 0.84rem;
+    }
+
+    #view-upload .secure-design-list {
+      display: grid;
+      gap: 18px;
+      margin: 0;
+    }
+
+    #view-upload .secure-design-item {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    #view-upload .secure-design-item i {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--success);
+      font-size: 0.78rem;
+    }
+
+    #view-upload .secure-design-item strong {
+      display: block;
+      color: #0f172a;
+      font-size: 0.9rem;
+    }
+
+    #view-upload .secure-design-item span {
+      color: #64748b;
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    #view-upload #ledger-entry-card {
+      margin-top: 0;
+    }
+
+    #view-upload .ledger-output {
+      background: #f1fbf7;
+    }
+
+    .file-meta,
+    .ledger-output,
+    .pipeline-node,
+    .hash-box,
+    .json-block {
+      border-color: #e5e7eb;
+      background: #f1f7f5;
+    }
+
+    .mono, .truncate-mono, .json-block {
+      color: #0f766e;
+    }
+
+    .table-card {
+      padding: 0;
+      overflow-x: auto;
+    }
+
+    .badge.success { color: var(--success); background: #d1fae5; }
+    .badge.danger { color: var(--danger); background: #fee2e2; }
+    .badge.warning { color: var(--warning); background: #fef3c7; }
+    .badge.info { color: var(--accent); background: #ccfbf1; }
+
+    #view-audit .badge.success,
+    #view-audit .badge.danger {
+      gap: 8px;
+      min-width: 78px;
+      justify-content: flex-start;
+      padding: 5px 10px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      line-height: 1.2;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    #view-audit .badge.success {
+      border-color: #cceee0;
+      color: #047857;
+      background: #edfdf5;
+    }
+
+    #view-audit .badge.danger {
+      border-color: #f5d0d3;
+      color: #b4232f;
+      background: #fff1f2;
+    }
+
+    #view-audit .status-dot {
+      width: 7px;
+      height: 7px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.72);
+    }
+
+    .slider {
+      background: #cbd5e1;
+    }
+
+    .slider::before {
+      background: #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
+    }
+
+    .ledger-status-card {
+      background:
+        linear-gradient(135deg, rgba(236, 253, 245, 0.8), rgba(255, 255, 255, 0.92)),
+        var(--surface);
+    }
+
+    .status-banner {
+      font-size: clamp(2rem, 7vw, 4rem);
+    }
+
+    .status-banner.valid {
+      color: var(--success);
+      background: linear-gradient(135deg, #d1fae5, #ecfdf5);
+      border-color: rgba(16, 185, 129, 0.34);
+    }
+
+    .status-banner.compromised {
+      color: var(--danger);
+      background: #fee2e2;
+      border-color: rgba(220, 38, 38, 0.22);
+    }
+
+    .stat {
+      background: #ffffff;
+    }
+
+    .doc-card {
+      display: grid;
+      grid-template-rows: 142px 1fr;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .doc-media {
+      position: relative;
+      overflow: hidden;
+      background: #e8f8f4;
+    }
+
+    .doc-media.signatures {
+      background:
+        linear-gradient(135deg, rgba(236, 253, 245, 0.1), rgba(15, 118, 110, 0.24)),
+        url("https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=720&q=80") center / cover;
+    }
+
+    .doc-media img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .doc-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 36%, rgba(4, 120, 87, 0.42));
+    }
+
+    .doc-content { padding: 18px; }
+
+    .doc-card i {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      color: var(--accent);
+      background: #ecfdf5;
+      font-size: 1rem;
+    }
+
+    .loader-overlay {
+      background: rgba(248, 252, 251, 0.78);
+    }
+
+    .modal-backdrop {
+      background: rgba(15, 23, 42, 0.42);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal {
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .verify-banner.ok { background: #d1fae5; }
+    .verify-banner.fail { background: #fee2e2; }
+
+    .toast {
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+    }
+
+    .admin-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .admin-summary-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 112px;
+    }
+
+    .admin-summary-icon {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 8px;
+      color: var(--accent);
+      background: #ecfdf5;
+      box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.12);
+    }
+
+    .admin-summary-card small {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .admin-summary-card strong {
+      display: block;
+      color: var(--text);
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .admin-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .admin-table-section {
+      display: grid;
+      gap: 18px;
+    }
+
+    .admin-table-section .card h3,
+    .admin-grid .card h3 {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .admin-table-section .card h3 i,
+    .admin-grid .card h3 i {
+      color: var(--accent);
+    }
+
+    .admin-table-section .table-card h3,
+    .admin-grid .table-card h3 {
+      padding: 18px 20px 0;
+    }
+
+    @media (max-width: 980px) {
+      #view-upload .upload-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-summary-grid,
+      .admin-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-card {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-visual {
+        min-height: 330px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      #view-upload .upload-page-header,
+      #view-upload .upload-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      #view-upload .secure-session-badge {
+        align-self: flex-start;
+      }
+
+      #view-upload .upload-actions .primary-btn,
+      #view-upload .upload-actions .secondary-btn {
+        width: 100%;
+      }
+
+      #view-upload #file-meta {
+        grid-template-columns: 1fr;
+        text-align: left;
+      }
+
+      #view-upload .file-check {
+        display: none;
+      }
+
+      .auth-shell {
+        padding: 16px;
+      }
+
+      .auth-card {
+        min-height: auto;
+      }
+
+      .auth-visual {
+        min-height: 260px;
+        padding: 24px;
+      }
+
+      .auth-panel {
+        padding: 24px;
+      }
+
+      .main {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+  <section id="auth-shell" class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-visual" aria-hidden="true">
+        <div class="auth-visual-copy">
+          <span><i class="fa-solid fa-microscope"></i> Pathology-grade security</span>
+          <h2>Clinical trust for every report.</h2>
+          <p>Secure report intake, cryptographic verification, and chain-of-custody checks for hospital laboratory teams.</p>
+        </div>
+      </div>
+      <div class="auth-panel">
+        <div class="brand-mark">
+          <div class="brand-icon"><i class="fa-solid fa-shield-heart"></i></div>
+          <div>
+            <h1 class="brand-name">MedAuth</h1>
+            <span class="section-kicker">Medical Security Backend</span>
+          </div>
+        </div>
+        <div class="auth-tabs" role="tablist">
+          <button id="login-tab" class="auth-tab active" type="button">Login</button>
+          <button id="register-tab" class="auth-tab" type="button">Register</button>
+        </div>
+        <form id="auth-form" class="auth-form">
+          <label>Username
+            <input id="auth-username" type="text" autocomplete="username" required>
+          </label>
+          <label>Password
+            <input id="auth-password" type="password" autocomplete="current-password" required minlength="8">
+          </label>
+          <label id="new-password-field" class="hidden">New password
+            <input id="auth-new-password" type="password" autocomplete="new-password" minlength="12">
+          </label>
+          <div id="password-rules" class="password-rules hidden">
+            <strong>Password requirements</strong>
+            <span>Use at least 12 characters with uppercase, lowercase, number, and symbol characters.</span>
+          </div>
+          <button id="auth-submit" class="primary-btn" type="submit"><i class="fa-solid fa-right-to-bracket"></i><span>Login</span></button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="app-shell" class="app-shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="brand-mark">
+        <div class="brand-icon logo-svg">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MedAuth secure medical shield">
+            <defs>
+              <linearGradient id="medauthShieldGradientSidebar" x1="12" y1="8" x2="52" y2="58" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#34D399"/>
+                <stop offset="0.45" stop-color="#10B981"/>
+                <stop offset="1" stop-color="#0F766E"/>
+              </linearGradient>
+              <filter id="medauthShadowSidebar" x="5" y="4" width="54" height="58" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F766E" flood-opacity="0.22"/>
+              </filter>
+            </defs>
+            <path filter="url(#medauthShadowSidebar)" d="M32 5.5L53 13.2V28.4C53 42.2 44.4 54.2 32 59C19.6 54.2 11 42.2 11 28.4V13.2L32 5.5Z" fill="url(#medauthShieldGradientSidebar)"/>
+            <path d="M32 10.8L48.2 16.7V28.7C48.2 39.7 41.6 49.2 32 53.3C22.4 49.2 15.8 39.7 15.8 28.7V16.7L32 10.8Z" fill="white" fill-opacity="0.13"/>
+            <path d="M29.2 20.2H34.8C35.6 20.2 36.2 20.8 36.2 21.6V27.6H42.2C43 27.6 43.6 28.2 43.6 29V34.6C43.6 35.4 43 36 42.2 36H36.2V42C36.2 42.8 35.6 43.4 34.8 43.4H29.2C28.4 43.4 27.8 42.8 27.8 42V36H21.8C21 36 20.4 35.4 20.4 34.6V29C20.4 28.2 21 27.6 21.8 27.6H27.8V21.6C27.8 20.8 28.4 20.2 29.2 20.2Z" fill="white"/>
+            <path d="M23.5 16.6L32 13.5L40.5 16.6" stroke="white" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-name">MedAuth</h1>
+          <span class="section-kicker">Secure medical ledger</span>
+        </div>
+      </div>
+      <div class="profile">
+        <div class="avatar"><img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=180&q=80" alt=""></div>
+        <div>
+          <small id="profile-role-label">Authenticated Doctor</small>
+          <strong id="profile-user">-</strong>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Dashboard navigation">
+        <button class="nav-btn doctor-only active" type="button" data-view="upload" data-required-role="doctor" data-required-permission="REPORT_UPLOAD"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button>
+        <button class="nav-btn" type="button" data-view="records"><i class="fa-solid fa-table-list"></i> Records</button>
+        <button class="nav-btn" type="button" data-view="audit"><i class="fa-solid fa-clipboard-list"></i> Audit Log</button>
+        <button class="nav-btn" type="button" data-view="ledger"><i class="fa-solid fa-link"></i> Blockchain</button>
+        <button class="nav-btn admin-only hidden" type="button" data-view="admin" data-required-role="admin" data-required-permission="USER_MANAGE"><i class="fa-solid fa-user-shield"></i> Admin</button>
+      </nav>
+      <button id="logout-btn" class="logout-btn" type="button"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <button id="menu-btn" class="icon-btn" type="button" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+        <strong>MedAuth</strong>
+      </div>
+
+      <section id="view-upload" class="view doctor-only active" data-required-role="doctor" data-required-permission="REPORT_UPLOAD">
+        <div class="view-header upload-page-header">
+          <div>
+            <div class="upload-title-row">
+              <i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
+              <h2>Upload Medical Report</h2>
+            </div>
+            <p>Your data is protected with end-to-end encryption and blockchain verification.</p>
+          </div>
+          <div class="secure-session-badge" aria-label="Secure session active">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <span>Secure Session</span>
+            <span class="session-dot" aria-hidden="true"></span>
+          </div>
+        </div>
+        <div class="upload-grid">
+          <div class="card upload-card">
+            <form id="upload-form">
+              <div id="doctor-certificate-card" class="file-meta visible doctor-only" data-required-role="doctor" data-required-permission="CERT_VIEW_OWN"><div class="file-preview-icon"><i class="fa-solid fa-certificate"></i></div><div class="file-preview-main"><strong>Medical Document-Signing Certificate</strong><div id="certificate-identity" class="mono">No authenticated doctor</div></div></div>
+              <input id="file-input" class="hidden" type="file" required>
+              <div id="drop-zone" class="drop-zone" tabindex="0">
+                <i class="fa-solid fa-file-medical"></i>
+                <strong>Drop your medical report here</strong>
+                <span>or click to browse files</span>
+                <small>Accepted formats: PDF, JPG, PNG &middot; Max 20MB</small>
+              </div>
+              <div id="file-meta" class="file-meta">
+                <div class="file-preview-icon"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i></div>
+                <div class="file-preview-main">
+                  <div class="file-preview-title">
+                    <strong id="file-name"></strong>
+                    <span id="file-size" class="file-size"></span>
+                    <span class="file-status">Uploaded locally</span>
+                  </div>
+                  <div class="mono-row file-hash-row">
+                    <span>SHA-256:</span>
+                    <span id="file-hash" class="mono"></span>
+                    <button class="icon-btn copy-btn" type="button" data-copy-target="file-hash" aria-label="Copy file hash"><i class="fa-solid fa-copy"></i></button>
+                  </div>
+                </div>
+                <div class="file-check"><i class="fa-solid fa-check" aria-hidden="true"></i></div>
+              </div>
+              <div class="form-grid">
+                <label>Patient ID
+                  <input id="patient-id" type="text" placeholder="PAT-0001" required>
+                </label>
+                <label>Report Type
+                  <select id="report-type" required>
+                    <option>CBC</option>
+                    <option>XRAY</option>
+                    <option>MRI</option>
+                    <option>CT</option>
+                    <option>PRESCRIPTION</option>
+                    <option>DISCHARGE_SUMMARY</option>
+                  </select>
+                </label>
+                <label>Report Date
+                  <input id="report-date" type="date" required>
+                </label>
+                <label>Doctor ID
+                  <input id="doctor-id" type="text" readonly required>
+                </label>
+                <label>Hospital Code
+                  <select id="hospital-code" required>
+                    <option>HOSP-001</option>
+                    <option>HOSP-002</option>
+                    <option>HOSP-003</option>
+                    <option>MED-100</option>
+                  </select>
+                </label>
+                <label>Department
+                  <input id="department" type="text" required>
+                </label>
+              </div>
+              <div class="upload-actions">
+                <button id="submit-upload" class="primary-btn" type="submit"><i class="fa-solid fa-lock"></i><span>Encrypt &amp; Commit to Fabric</span></button>
+                <button id="reset-upload" class="secondary-btn" type="button"><i class="fa-solid fa-rotate-left"></i><span>Reset</span></button>
+              </div>
+              <p class="upload-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> The server stores only AES-GCM ciphertext and a wrapped per-file key.</p>
+            </form>
+          </div>
+          <div class="right-column">
+            <div class="card pipeline-card">
+              <h3>Verification Pipeline</h3>
+              <div id="pipeline" class="pipeline"></div>
+              <div id="pipeline-result-panel" class="pipeline-result-panel hidden"></div>
+            </div>
+            <div id="ledger-entry-card" class="card ledger-card hidden">
+              <h3>Fabric Transaction ID</h3>
+              <div class="mono-row ledger-output"><span id="ledger-hash" class="mono"></span><button id="ledger-copy" class="icon-btn copy-btn hidden" type="button" data-copy-target="ledger-hash" aria-label="Copy Fabric transaction ID"><i class="fa-solid fa-copy"></i></button></div>
+            </div>
+            <div class="card secure-design-card">
+              <h3>Secure by Design</h3>
+              <div class="secure-design-list">
+                <div class="secure-design-item">
+                  <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                  <div><strong>Envelope encryption</strong><span>Every report receives a unique AES-256 data key.</span></div>
+                </div>
+                <div class="secure-design-item">
+                  <i class="fa-solid fa-cube" aria-hidden="true"></i>
+                  <div><strong>Endorsement-backed commitment</strong><span>Hospital and Laboratory peers replicate tamper-evident commitments.</span></div>
+                </div>
+                <div class="secure-design-item">
+                  <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+                  <div><strong>Authorized access</strong><span>Backend permissions and ownership guard plaintext.</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-records" class="view">
+        <div class="view-header">
+          <div>
+            <h2>Records</h2>
+            <p>Review your uploads or open the verified clinical viewer.</p>
+          </div>
+        </div>
+        <div class="records-mode-tabs" role="tablist" aria-label="Record modes">
+          <button id="my-records-tab" class="records-mode-tab active" type="button" role="tab" aria-selected="true" data-records-mode="mine"><i class="fa-solid fa-folder-open"></i> My Records</button>
+          <button id="patient-viewer-tab" class="records-mode-tab doctor-only" type="button" role="tab" aria-selected="false" data-records-mode="patient" data-required-role="doctor" data-required-permission="REPORT_READ_ALL_CLINICAL_METADATA"><i class="fa-solid fa-notes-medical"></i> Patient Record Viewer</button>
+        </div>
+        <div id="my-records-panel" role="tabpanel">
+          <div class="view-header">
+            <div><h3>My Records</h3><p>Review signed uploads and perform point-in-time integrity checks.</p></div>
+            <button id="refresh-records" class="secondary-btn" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          </div>
+          <div class="card table-card">
+            <table>
+              <thead><tr><th>ID</th><th>Patient</th><th>Report Type</th><th>Date</th><th>Hospital</th><th>SHA-256</th><th>Signed</th><th>Uploaded At</th><th>Actions</th></tr></thead>
+              <tbody id="records-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="patient-viewer-panel" class="hidden doctor-only" role="tabpanel" data-required-role="doctor" data-required-permission="REPORT_READ_ALL_CLINICAL_METADATA">
+          <div class="card clinical-search-card">
+            <h3><i class="fa-solid fa-user-doctor"></i> Patient Record Viewer — Read Only</h3>
+            <p class="clinical-search-copy">Verified doctors may review existing medical records. Uploading new reports remains limited to doctors assigned to the patient.</p>
+            <form id="patient-record-search-form" class="clinical-search-form">
+              <label>Exact Patient ID<input id="patient-record-search-id" required pattern="PAT-[0-9]{4}" placeholder="PAT-1001" autocomplete="off"></label>
+              <button id="patient-record-search-submit" class="primary-btn" type="submit"><i class="fa-solid fa-magnifying-glass"></i><span>Search</span></button>
+              <button id="patient-record-search-clear" class="secondary-btn" type="button"><i class="fa-solid fa-xmark"></i> Clear</button>
+            </form>
+          </div>
+          <p id="clinical-results-summary" class="clinical-results-summary">Enter one exact patient ID to search. No patient list is loaded automatically.</p>
+          <div class="card table-card">
+            <table>
+              <thead><tr><th>Report</th><th>Clinical Details</th><th>Uploaded By</th><th>Signing Certificate</th><th>Fabric</th><th>Access</th><th>Actions</th></tr></thead>
+              <tbody id="clinical-records-body"><tr><td colspan="7">No patient search performed.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-audit" class="view">
+        <div class="view-header">
+          <div>
+            <h2>Audit Log</h2>
+            <p>JWT-protected telemetry for security-sensitive backend events.</p>
+          </div>
+          <label class="toggle-row">
+            <span>Live Auto-Refresh</span>
+            <span class="switch"><input id="audit-live" type="checkbox"><span class="slider"></span></span>
+          </label>
+          <button id="verify-audit" class="secondary-btn" type="button"><i class="fa-solid fa-link"></i> Verify Audit Chain</button>
+        </div>
+        <div class="card table-card">
+          <table>
+            <thead><tr><th>#</th><th>Action</th><th>Status</th><th>IP Address</th><th>Details</th><th>Timestamp</th></tr></thead>
+            <tbody id="audit-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-ledger" class="view">
+        <div class="card ledger-status-card">
+          <h3>Permissioned Medical Blockchain</h3>
+          <p>Cryptographic medical-record commitments endorsed by the Hospital and Laboratory organizations on Hyperledger Fabric.</p>
+          <div id="ledger-status" class="status-banner valid">
+            <div class="ledger-hero valid">
+              <div class="ledger-hero-icon">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                <i class="fa-solid fa-check ledger-hero-mark" aria-hidden="true"></i>
+              </div>
+              <div class="ledger-hero-copy">
+                <strong>NOT CHECKED</strong>
+                <p>Check the Fabric network or verify all committed MedAuth records.</p>
+                <p>Encrypted medical files remain off-chain.</p>
+              </div>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat"><small>Platform</small><strong id="fabric-platform">Hyperledger Fabric</strong></div>
+            <div class="stat"><small>Channel</small><strong id="fabric-channel">medicalchannel</strong></div>
+            <div class="stat"><small>Chaincode</small><strong id="fabric-chaincode">medicalrecords</strong></div>
+            <div class="stat"><small>Organizations</small><strong id="fabric-organizations">Hospital / Org1MSP · Laboratory / Org2MSP</strong></div>
+            <div class="stat"><small>Endorsement Policy</small><strong id="fabric-policy">Hospital AND Laboratory</strong></div>
+            <div class="stat"><small>Connection</small><strong id="fabric-connection">Not checked</strong></div>
+            <div class="stat"><small>On-chain Records</small><strong id="fabric-total-records">0</strong></div>
+            <div class="stat"><small>Committed Uploads</small><strong id="fabric-committed-uploads">0</strong></div>
+            <div class="stat"><small>Uncommitted Uploads</small><strong id="fabric-uncommitted-uploads">0</strong></div>
+            <div class="stat"><small>Failed Commitments</small><strong id="fabric-failed-uploads">0</strong></div>
+          </div>
+          <div class="upload-actions">
+            <button id="check-fabric" class="secondary-btn" type="button"><i class="fa-solid fa-network-wired"></i><span>Check Fabric Network</span></button>
+            <button id="verify-ledger" class="primary-btn" type="button"><i class="fa-solid fa-shield-halved"></i><span>Verify All Committed Records</span></button>
+            <button id="retry-fabric" class="secondary-btn admin-only" type="button"><i class="fa-solid fa-rotate"></i><span>Retry Failed Commitment</span></button>
+          </div>
+          <div id="ledger-loader" class="loader-overlay"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        </div>
+        <div class="card table-card">
+          <table>
+            <thead><tr><th>Upload</th><th>Fabric Status</th><th>Record ID</th><th>Transaction ID</th><th>Block</th><th>Validation</th><th>Verification</th></tr></thead>
+            <tbody id="fabric-records-body"><tr><td colspan="7">Check the Fabric network to load records.</td></tr></tbody>
+          </table>
+        </div>
+        <div class="doc-grid">
+          <div class="card doc-card">
+            <div class="doc-media signatures"></div>
+            <div class="doc-content"><i class="fa-solid fa-signature"></i><h3>Digital Signatures</h3><p>Reports are bound to doctor identities by asymmetric signing over the file hash, nonce, timestamp, and medical metadata.</p></div>
+          </div>
+          <div class="card doc-card">
+            <div class="doc-media"><img src="https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&w=720&q=80" alt=""></div>
+            <div class="doc-content"><i class="fa-solid fa-lock"></i><h3>AES-256-GCM Encryption</h3><p>Stored files use authenticated encryption so confidentiality and tamper detection are enforced together at rest.</p></div>
+          </div>
+          <div class="card doc-card">
+            <div class="doc-media"><img src="https://images.unsplash.com/photo-1582719471384-894fbb16e074?auto=format&fit=crop&w=720&q=80" alt=""></div>
+            <div class="doc-content"><i class="fa-solid fa-link"></i><h3>Permissioned Blockchain</h3><p>Fabric stores append-only cryptographic commitments replicated under Hospital AND Laboratory endorsement; the encrypted PDF stays off-chain.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-admin" class="view">
+        <div class="view-header">
+          <div>
+            <h2>Admin Console</h2>
+            <p>Manage certificates, rejected uploads, and system-wide medical ledger activity.</p>
+          </div>
+          <button id="refresh-admin" class="secondary-btn" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        </div>
+
+        <div class="admin-summary-grid">
+          <div class="card admin-summary-card">
+            <div class="admin-summary-icon"><i class="fa-solid fa-file-medical"></i></div>
+            <div><small>Total Uploads</small><strong id="admin-total-uploads">0</strong></div>
+          </div>
+          <div class="card admin-summary-card">
+            <div class="admin-summary-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div><small>Rejected Uploads</small><strong id="admin-rejected-uploads">0</strong></div>
+          </div>
+          <div class="card admin-summary-card">
+            <div class="admin-summary-icon"><i class="fa-solid fa-ban"></i></div>
+            <div><small>Revoked Certificates</small><strong id="admin-revoked-certificates">0</strong></div>
+          </div>
+          <div class="card admin-summary-card">
+            <div class="admin-summary-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div><small>Active mTLS Identities</small><strong id="admin-active-tls-certificates">0</strong></div>
+          </div>
+        </div>
+
+        <div class="admin-grid">
+          <div class="card">
+            <h3><i class="fa-solid fa-certificate"></i> Issue Medical Document-Signing Certificate</h3>
+            <form id="issue-certificate-form" class="admin-form"><label>Doctor Username<input id="issue-certificate-username" required placeholder="doctor_rossi"></label><button id="submit-issue-certificate" class="primary-btn" type="submit"><i class="fa-solid fa-plus"></i><span>Issue Certificate</span></button></form>
+          </div>
+          <div class="card">
+            <h3><i class="fa-solid fa-user-doctor"></i> Assign Patient</h3>
+            <form id="assign-patient-form" class="admin-form"><label>Doctor Username<input id="assign-doctor-username" required placeholder="doctor_rossi"></label><label>Patient ID<input id="assign-patient-id" required placeholder="PAT-1001"></label><button id="submit-assign-patient" class="primary-btn" type="submit"><i class="fa-solid fa-link"></i><span>Assign Patient</span></button></form>
+          </div>
+          <div class="card">
+            <h3><i class="fa-solid fa-certificate"></i> Document-Signing Certificate Revocation</h3>
+            <form id="revoke-certificate-form" class="admin-form">
+              <label>Certificate Serial Number
+                <input id="revoke-serial-number" type="text" placeholder="CERT_SERIAL" required>
+              </label>
+              <label>Reason
+                <input id="revoke-reason" type="text" placeholder="Reason for revocation">
+              </label>
+              <label>Demo OTP<input id="revoke-otp" type="password" inputmode="numeric" placeholder="123456" required></label>
+              <button id="submit-revoke-certificate" class="primary-btn" type="submit"><i class="fa-solid fa-ban"></i><span>Revoke Certificate</span></button>
+            </form>
+          </div>
+          <div class="card table-card">
+            <h3><i class="fa-solid fa-list-check"></i> Revoked Certificates</h3>
+            <table>
+              <thead><tr><th>Serial Number</th><th>Reason</th><th>Revoked At</th><th>Action</th></tr></thead>
+              <tbody id="revoked-certificates-body"></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h3><i class="fa-solid fa-laptop-medical"></i> Issue mTLS Client Authentication Certificate</h3>
+            <form id="issue-tls-certificate-form" class="admin-form">
+              <label>Doctor Username<input id="issue-tls-username" required placeholder="doctor_rossi"></label>
+              <label>Client-generated CSR PEM<textarea id="issue-tls-csr" rows="7" required placeholder="-----BEGIN CERTIFICATE REQUEST-----"></textarea></label>
+              <button id="submit-issue-tls-certificate" class="primary-btn" type="submit"><i class="fa-solid fa-shield-halved"></i><span>Approve CSR &amp; Issue</span></button>
+            </form>
+          </div>
+          <div class="card">
+            <h3><i class="fa-solid fa-ban"></i> Revoke mTLS Client Authentication Certificate</h3>
+            <form id="revoke-tls-certificate-form" class="admin-form">
+              <label>TLS Certificate Serial<input id="revoke-tls-serial" required placeholder="TLS_SERIAL"></label>
+              <label>Reason<input id="revoke-tls-reason" required placeholder="Device lost or identity compromised"></label>
+              <label>Demo OTP<input id="revoke-tls-otp" type="password" inputmode="numeric" required placeholder="123456"></label>
+              <button id="submit-revoke-tls-certificate" class="primary-btn" type="submit"><i class="fa-solid fa-ban"></i><span>Revoke mTLS Identity</span></button>
+            </form>
+          </div>
+          <div class="card">
+            <h3><i class="fa-solid fa-arrows-rotate"></i> Rotate mTLS Client Authentication Certificate</h3>
+            <form id="rotate-tls-certificate-form" class="admin-form">
+              <label>Current TLS Certificate Serial<input id="rotate-tls-serial" required placeholder="CURRENT_TLS_SERIAL"></label>
+              <label>New client-generated CSR PEM<textarea id="rotate-tls-csr" rows="7" required placeholder="-----BEGIN CERTIFICATE REQUEST-----"></textarea></label>
+              <label>Demo OTP<input id="rotate-tls-otp" type="password" inputmode="numeric" required placeholder="123456"></label>
+              <button id="submit-rotate-tls-certificate" class="primary-btn" type="submit"><i class="fa-solid fa-arrows-rotate"></i><span>Approve Rotation</span></button>
+            </form>
+          </div>
+        </div>
+
+        <div class="admin-table-section">
+          <div class="card table-card">
+            <h3><i class="fa-solid fa-shield-halved"></i> Doctor mTLS Client Identities</h3>
+            <table>
+              <thead><tr><th>Username</th><th>Serial</th><th>Fingerprint SHA-256</th><th>Status</th><th>Expires</th><th>Revocation</th></tr></thead>
+              <tbody id="tls-certificates-body"></tbody>
+            </table>
+          </div>
+          <div class="card table-card">
+            <h3><i class="fa-solid fa-filter-circle-xmark"></i> Rejected Uploads</h3>
+            <table>
+              <thead><tr><th>ID</th><th>Username</th><th>Failed Stage</th><th>Reason</th><th>File Hash</th><th>Timestamp</th></tr></thead>
+              <tbody id="rejected-uploads-body"></tbody>
+            </table>
+          </div>
+          <div class="card table-card">
+            <h3><i class="fa-solid fa-database"></i> All Uploads</h3>
+            <table>
+              <thead><tr><th>ID</th><th>Username</th><th>Patient ID</th><th>Report Type</th><th>Doctor ID</th><th>Signer Serial</th><th>Uploaded At</th></tr></thead>
+              <tbody id="admin-uploads-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <div id="verify-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="verify-title">
+    <div class="modal">
+      <div class="modal-head">
+        <strong id="verify-title">Record Verification</strong>
+        <button id="close-modal" class="icon-btn" type="button" aria-label="Close verification modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="clinical-view-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="clinical-view-title">
+    <div class="modal clinical-modal">
+      <div class="modal-head">
+        <strong id="clinical-view-title">Clinical Report — Read Only</strong>
+        <button id="close-clinical-view" class="icon-btn" type="button" aria-label="Close clinical report viewer"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="clinical-view-metadata" class="clinical-view-metadata"></div>
+        <iframe id="clinical-view-frame" class="clinical-view-frame" title="Read-only clinical report" sandbox></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      token: null,
+      user: null,
+      userId: null,
+      role: null,
+      permissions: [],
+      currentView: null,
+      authGeneration: 0,
+      doctorCertificate: null,
+      certificateRequestController: null,
+      recordsMode: 'mine',
+      patientSearchController: null,
+      clinicalViewController: null,
+      clinicalObjectUrl: null,
+      clinicalRecords: []
+    };
+    const pipelineNodes = ['identity-verifier', 'replay-verifier', 'certificate-trust-verifier', 'certificate-user-binding-verifier', 'signature-verifier', 'doctor-patient-authorization-verifier', 'duplicate-detector', 'fabric-blockchain-commit'];
+    const pipelineCopy = {
+      'identity-verifier': { label: 'Identity Verification', description: 'Doctor identity validated' },
+      'replay-verifier': { label: 'Replay Protection', description: 'No replay attacks detected' },
+      'certificate-trust-verifier': { label: 'Certificate Trust', description: 'Certificate chains to the Root CA and is active' },
+      'certificate-user-binding-verifier': { label: 'Certificate-User Binding', description: 'Serial and subject match the authenticated doctor' },
+      'signature-verifier': { label: 'Signature Integrity', description: 'RSA signature covers the complete medical payload' },
+      'doctor-patient-authorization-verifier': { label: 'Doctor-Patient Authorization', description: 'Doctor is assigned to the patient' },
+      'duplicate-detector': { label: 'Duplicate Detection', description: 'No duplicates found' },
+      'fabric-blockchain-commit': { label: 'Blockchain Commit', description: 'Hospital and Laboratory endorsed the Fabric transaction' }
+    };
+    const elements = {};
+    let authMode = 'login';
+    let passwordUpgradeUsername = null;
+    let selectedFile = null;
+    let selectedHash = null;
+    let auditTimer = null;
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      bindElements();
+      bindEvents();
+      setTodayMax();
+      renderPipeline(null);
+      renderAuthState();
+    }
+
+    function bindElements() {
+      const ids = ['toast-stack', 'auth-shell', 'app-shell', 'login-tab', 'register-tab', 'auth-form', 'auth-username', 'auth-password', 'new-password-field', 'auth-new-password', 'password-rules', 'auth-submit', 'profile-role-label', 'profile-user', 'sidebar', 'menu-btn', 'logout-btn', 'doctor-certificate-card', 'certificate-identity', 'file-input', 'drop-zone', 'file-meta', 'file-name', 'file-size', 'file-hash', 'upload-form', 'patient-id', 'report-type', 'report-date', 'doctor-id', 'hospital-code', 'department', 'submit-upload', 'reset-upload', 'pipeline', 'pipeline-result-panel', 'ledger-entry-card', 'ledger-hash', 'ledger-copy', 'my-records-tab', 'patient-viewer-tab', 'my-records-panel', 'patient-viewer-panel', 'records-body', 'refresh-records', 'patient-record-search-form', 'patient-record-search-id', 'patient-record-search-submit', 'patient-record-search-clear', 'clinical-results-summary', 'clinical-records-body', 'clinical-view-modal', 'clinical-view-title', 'close-clinical-view', 'clinical-view-metadata', 'clinical-view-frame', 'audit-live', 'verify-audit', 'audit-body', 'ledger-status', 'verify-ledger', 'check-fabric', 'retry-fabric', 'ledger-loader', 'fabric-platform', 'fabric-channel', 'fabric-chaincode', 'fabric-organizations', 'fabric-policy', 'fabric-connection', 'fabric-total-records', 'fabric-committed-uploads', 'fabric-uncommitted-uploads', 'fabric-failed-uploads', 'fabric-records-body', 'refresh-admin', 'admin-total-uploads', 'admin-rejected-uploads', 'admin-revoked-certificates', 'admin-active-tls-certificates', 'issue-certificate-form', 'issue-certificate-username', 'submit-issue-certificate', 'issue-tls-certificate-form', 'issue-tls-username', 'issue-tls-csr', 'submit-issue-tls-certificate', 'revoke-tls-certificate-form', 'revoke-tls-serial', 'revoke-tls-reason', 'revoke-tls-otp', 'submit-revoke-tls-certificate', 'rotate-tls-certificate-form', 'rotate-tls-serial', 'rotate-tls-csr', 'rotate-tls-otp', 'submit-rotate-tls-certificate', 'tls-certificates-body', 'assign-patient-form', 'assign-doctor-username', 'assign-patient-id', 'submit-assign-patient', 'revoke-certificate-form', 'revoke-serial-number', 'revoke-reason', 'revoke-otp', 'submit-revoke-certificate', 'revoked-certificates-body', 'rejected-uploads-body', 'admin-uploads-body', 'verify-modal', 'close-modal', 'modal-body'];
+      ids.forEach(function(id) { elements[toCamel(id)] = document.getElementById(id); });
+      elements.navButtons = Array.from(document.querySelectorAll('.nav-btn'));
+      elements.copyButtons = Array.from(document.querySelectorAll('.copy-btn'));
+      elements.adminOnly = Array.from(document.querySelectorAll('.admin-only'));
+      elements.doctorOnly = Array.from(document.querySelectorAll('.doctor-only'));
+    }
+
+    function bindEvents() {
+      elements.loginTab.addEventListener('click', function() { setAuthMode('login'); });
+      elements.registerTab.addEventListener('click', function() { setAuthMode('register'); });
+      elements.authForm.addEventListener('submit', submitAuth);
+      elements.logoutBtn.addEventListener('click', function() { logout(); });
+      elements.menuBtn.addEventListener('click', function() { elements.sidebar.classList.toggle('open'); });
+      elements.navButtons.forEach(function(button) {
+        button.addEventListener('click', function() { switchView(button.dataset.view); });
+      });
+      elements.dropZone.addEventListener('click', function() { elements.fileInput.click(); });
+      elements.dropZone.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          elements.fileInput.click();
+        }
+      });
+      elements.dropZone.addEventListener('dragover', function(event) {
+        event.preventDefault();
+        elements.dropZone.classList.add('dragover');
+      });
+      elements.dropZone.addEventListener('dragleave', function() { elements.dropZone.classList.remove('dragover'); });
+      elements.dropZone.addEventListener('drop', handleDrop);
+      elements.fileInput.addEventListener('change', function() {
+        if (elements.fileInput.files.length > 0) {
+          handleFile(elements.fileInput.files[0]);
+        }
+      });
+      elements.uploadForm.addEventListener('submit', submitUpload);
+      elements.resetUpload.addEventListener('click', resetUploadForm);
+      elements.refreshRecords.addEventListener('click', fetchRecords);
+      elements.myRecordsTab.addEventListener('click', function() { setRecordsMode('mine'); });
+      elements.patientViewerTab.addEventListener('click', function() { setRecordsMode('patient'); });
+      elements.patientRecordSearchForm.addEventListener('submit', searchPatientRecords);
+      elements.patientRecordSearchClear.addEventListener('click', clearPatientRecordSearch);
+      elements.closeClinicalView.addEventListener('click', closeClinicalViewer);
+      elements.clinicalViewModal.addEventListener('click', function(event) {
+        if (event.target === elements.clinicalViewModal) closeClinicalViewer();
+      });
+      elements.auditLive.addEventListener('change', toggleAuditLive);
+      elements.verifyAudit.addEventListener('click', verifyAuditChain);
+      elements.verifyLedger.addEventListener('click', verifyLedger);
+      elements.checkFabric.addEventListener('click', checkFabricNetwork);
+      elements.retryFabric.addEventListener('click', retryFabricCommitment);
+      elements.refreshAdmin.addEventListener('click', fetchAdminDashboard);
+      elements.revokeCertificateForm.addEventListener('submit', revokeCertificate);
+      elements.issueCertificateForm.addEventListener('submit', issueCertificate);
+      elements.issueTlsCertificateForm.addEventListener('submit', issueTlsCertificate);
+      elements.revokeTlsCertificateForm.addEventListener('submit', revokeTlsCertificate);
+      elements.rotateTlsCertificateForm.addEventListener('submit', rotateTlsCertificate);
+      elements.assignPatientForm.addEventListener('submit', assignPatient);
+      elements.closeModal.addEventListener('click', closeModal);
+      elements.verifyModal.addEventListener('click', function(event) {
+        if (event.target === elements.verifyModal) {
+          closeModal();
+        }
+      });
+      document.addEventListener('click', handleDocumentClick);
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          closeModal();
+          closeClinicalViewer();
+          elements.sidebar.classList.remove('open');
+        }
+      });
+    }
+
+    function toCamel(value) {
+      return value.replace(/-([a-z])/g, function(match, letter) { return letter.toUpperCase(); });
+    }
+
+    function setTodayMax() {
+      const today = new Date().toISOString().slice(0, 10);
+      elements.reportDate.max = today;
+      elements.reportDate.value = today;
+    }
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      if (mode !== 'password-upgrade') {
+        passwordUpgradeUsername = null;
+      }
+
+      const showNewPassword = mode === 'password-upgrade';
+      const showRules = mode === 'register' || mode === 'password-upgrade';
+      elements.loginTab.classList.toggle('active', mode === 'login' || mode === 'password-upgrade');
+      elements.registerTab.classList.toggle('active', mode === 'register');
+      elements.newPasswordField.classList.toggle('hidden', !showNewPassword);
+      elements.passwordRules.classList.toggle('hidden', !showRules);
+      elements.authNewPassword.required = showNewPassword;
+      elements.authUsername.readOnly = mode === 'password-upgrade';
+      elements.authPassword.minLength = mode === 'login' || mode === 'password-upgrade' ? 1 : 12;
+      elements.authPassword.autocomplete = mode === 'login' || mode === 'password-upgrade' ? 'current-password' : 'new-password';
+      elements.authPassword.placeholder = mode === 'password-upgrade' ? 'Current password' : '';
+      elements.authNewPassword.value = '';
+
+      if (mode === 'login') {
+        elements.authSubmit.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i><span>Login</span>';
+      } else if (mode === 'register') {
+        elements.authSubmit.innerHTML = '<i class="fa-solid fa-user-plus"></i><span>Register</span>';
+      } else {
+        elements.authSubmit.innerHTML = '<i class="fa-solid fa-key"></i><span>Update Password</span>';
+      }
+    }
+
+    async function submitAuth(event) {
+      event.preventDefault();
+      const username = elements.authUsername.value.trim();
+      const password = elements.authPassword.value;
+      const newPassword = elements.authNewPassword.value;
+      if (!username || !password) {
+        toast('error', 'Username and password are required.');
+        return;
+      }
+      if (authMode === 'password-upgrade' && !newPassword) {
+        toast('error', 'New password is required.');
+        return;
+      }
+      if ((authMode === 'register' && !meetsPasswordPolicy(password)) || (authMode === 'password-upgrade' && !meetsPasswordPolicy(newPassword))) {
+        toast('error', 'Password must be at least 12 characters and include uppercase, lowercase, number, and symbol characters.');
+        return;
+      }
+
+      const loginGeneration = beginAuthenticationRequest();
+      const loadingText = authMode === 'login' ? 'Authenticating' : authMode === 'register' ? 'Registering' : 'Updating';
+      setButtonLoading(elements.authSubmit, true, loadingText);
+      try {
+        const endpoint = authMode === 'password-upgrade' ? '/api/auth/password-upgrade' : '/api/auth/' + authMode;
+        const body = authMode === 'password-upgrade'
+          ? { username: username, password: password, newPassword: newPassword }
+          : { username: username, password: password };
+        const response = await apiFetch(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(body),
+          accountScoped: false
+        });
+        if (state.authGeneration !== loginGeneration) return;
+        invalidateAccountRequests();
+        state.token = response.token;
+        const payload = parseJwtPayload(response.token);
+        state.user = payload.username || payload.sub || response.user?.username || username;
+        state.userId = String(payload.sub || response.user?.id || '');
+        state.role = payload.role || response.user?.role || 'doctor';
+        state.permissions = Array.isArray(response.user?.permissions) ? response.user.permissions.slice() : [];
+        state.currentView = getDefaultViewForCurrentUser();
+        clearDoctorCertificateUi('Loading account-specific security context...', 'loading');
+        toast('success', authMode === 'login' ? 'Login successful.' : authMode === 'register' ? 'Registration successful.' : 'Password updated.');
+        passwordUpgradeUsername = null;
+        setAuthMode('login');
+        renderAuthState();
+      } catch (error) {
+        if (isStaleAuthenticationError(error) || state.authGeneration !== loginGeneration) return;
+        if (error.payload?.code === 'PASSWORD_UPGRADE_REQUIRED' || error.payload?.requiresPasswordUpgrade) {
+          passwordUpgradeUsername = error.payload.username || username;
+          elements.authUsername.value = passwordUpgradeUsername;
+          setAuthMode('password-upgrade');
+          toast('info', 'Enter a new password to continue.');
+          return;
+        }
+        toast('error', error.message);
+      } finally {
+        setButtonLoading(elements.authSubmit, false);
+        if (!state.token) {
+          setAuthMode(authMode);
+        }
+      }
+    }
+
+    function meetsPasswordPolicy(value) {
+      return typeof value === 'string'
+        && value.length >= 12
+        && /[A-Z]/.test(value)
+        && /[a-z]/.test(value)
+        && /[0-9]/.test(value)
+        && /[^A-Za-z0-9]/.test(value);
+    }
+
+    function parseJwtPayload(token) {
+      try {
+        const payloadPart = token.split('.')[1] || '';
+        const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=');
+        return JSON.parse(decodeURIComponent(Array.from(atob(padded)).map(function(character) {
+          return '%' + character.charCodeAt(0).toString(16).padStart(2, '0');
+        }).join('')));
+      } catch {
+        return {};
+      }
+    }
+
+    function beginAuthenticationRequest() {
+      invalidateAccountRequests();
+      clearUserSpecificUi('No authenticated doctor');
+      return state.authGeneration;
+    }
+
+    function invalidateAccountRequests() {
+      state.authGeneration += 1;
+      if (state.certificateRequestController) {
+        state.certificateRequestController.abort();
+        state.certificateRequestController = null;
+      }
+      if (state.patientSearchController) {
+        state.patientSearchController.abort();
+        state.patientSearchController = null;
+      }
+      if (state.clinicalViewController) {
+        state.clinicalViewController.abort();
+        state.clinicalViewController = null;
+      }
+      closeClinicalViewer({ abortRequest: false });
+    }
+
+    function captureAuthenticationSnapshot() {
+      return {
+        generation: state.authGeneration,
+        token: state.token,
+        userId: String(state.userId || ''),
+        role: state.role
+      };
+    }
+
+    function isAuthenticationSnapshotCurrent(snapshot, requireDoctor = false) {
+      return Boolean(snapshot)
+        && snapshot.generation === state.authGeneration
+        && snapshot.token === state.token
+        && snapshot.userId === String(state.userId || '')
+        && snapshot.role === state.role
+        && (!requireDoctor || state.role === 'doctor');
+    }
+
+    function staleAuthenticationError() {
+      const error = new Error('Request ignored because the authenticated account changed.');
+      error.code = 'STALE_AUTHENTICATION_CONTEXT';
+      error.staleAuthentication = true;
+      return error;
+    }
+
+    function isStaleAuthenticationError(error) {
+      return Boolean(error?.staleAuthentication || error?.code === 'STALE_AUTHENTICATION_CONTEXT');
+    }
+
+    function hasPermission(permission) {
+      return state.permissions.includes(permission);
+    }
+
+    function hasAnyPermission(permissionNames) {
+      return permissionNames.some(function(permission) { return hasPermission(permission); });
+    }
+
+    function canAccessView(view) {
+      if (!state.token) return false;
+      const rules = {
+        upload: function() { return state.role === 'doctor' && hasPermission('REPORT_UPLOAD'); },
+        records: function() { return hasAnyPermission(['REPORT_READ_OWN', 'REPORT_READ_ALL_METADATA', 'REPORT_READ_ALL_CLINICAL_METADATA']); },
+        audit: function() { return hasAnyPermission(['AUDIT_VIEW', 'AUDIT_VIEW_OWN']); },
+        ledger: function() { return hasPermission('LEDGER_VERIFY'); },
+        admin: function() { return state.role === 'admin' && hasPermission('USER_MANAGE'); }
+      };
+      return Boolean(rules[view]?.());
+    }
+
+    function getDefaultViewForCurrentUser() {
+      const roleDefaults = {
+        doctor: ['upload', 'records', 'audit', 'ledger'],
+        admin: ['admin', 'audit', 'ledger', 'records'],
+        auditor: ['audit', 'ledger', 'records']
+      };
+      const candidates = roleDefaults[state.role] || ['audit', 'ledger', 'records', 'admin', 'upload'];
+      return candidates.find(canAccessView) || null;
+    }
+
+    function clearDoctorCertificateUi(message, variant = 'neutral') {
+      state.doctorCertificate = null;
+      if (!elements.certificateIdentity || !elements.doctorCertificateCard) return;
+      elements.certificateIdentity.textContent = message || 'No authenticated doctor';
+      elements.certificateIdentity.removeAttribute('title');
+      ['serialNumber', 'fingerprint', 'status', 'expiresAt', 'owner', 'subject', 'issuer', 'certificateId']
+        .forEach(function(key) { delete elements.certificateIdentity.dataset[key]; });
+      elements.doctorCertificateCard.classList.remove('loading', 'success', 'error', 'inactive');
+      if (variant !== 'neutral') elements.doctorCertificateCard.classList.add(variant);
+      elements.doctorCertificateCard.removeAttribute('aria-busy');
+      if (variant === 'loading') elements.doctorCertificateCard.setAttribute('aria-busy', 'true');
+    }
+
+    function clearUserSpecificUi(certificateMessage) {
+      clearDoctorCertificateUi(certificateMessage || 'No authenticated doctor');
+      if (elements.profileUser) elements.profileUser.textContent = '-';
+      if (elements.profileRoleLabel) elements.profileRoleLabel.textContent = 'Not authenticated';
+      if (elements.doctorId) elements.doctorId.value = '';
+      if (elements.recordsBody) elements.recordsBody.innerHTML = '';
+      state.recordsMode = 'mine';
+      state.clinicalRecords = [];
+      if (elements.patientRecordSearchSubmit) setButtonLoading(elements.patientRecordSearchSubmit, false);
+      if (elements.patientRecordSearchId) elements.patientRecordSearchId.value = '';
+      if (elements.clinicalResultsSummary) elements.clinicalResultsSummary.textContent = 'Enter one exact patient ID to search. No patient list is loaded automatically.';
+      if (elements.clinicalRecordsBody) elements.clinicalRecordsBody.innerHTML = tableEmptyRow(7, 'No patient search performed.');
+      if (elements.myRecordsTab) {
+        elements.myRecordsTab.classList.add('active');
+        elements.myRecordsTab.setAttribute('aria-selected', 'true');
+      }
+      if (elements.patientViewerTab) {
+        elements.patientViewerTab.classList.remove('active');
+        elements.patientViewerTab.setAttribute('aria-selected', 'false');
+      }
+      if (elements.myRecordsPanel) elements.myRecordsPanel.classList.remove('hidden');
+      if (elements.patientViewerPanel) elements.patientViewerPanel.classList.add('hidden');
+      closeClinicalViewer({ abortRequest: true });
+      if (elements.auditBody) elements.auditBody.innerHTML = '';
+      if (elements.adminUploadsBody) elements.adminUploadsBody.innerHTML = '';
+      if (elements.rejectedUploadsBody) elements.rejectedUploadsBody.innerHTML = '';
+      if (elements.revokedCertificatesBody) elements.revokedCertificatesBody.innerHTML = '';
+      if (elements.tlsCertificatesBody) elements.tlsCertificatesBody.innerHTML = '';
+      if (elements.fabricRecordsBody) elements.fabricRecordsBody.innerHTML = '<tr><td colspan="7">Sign in to load records.</td></tr>';
+      if (elements.ledgerLoader) elements.ledgerLoader.classList.remove('active');
+      if (elements.verifyModal) elements.verifyModal.classList.remove('open');
+      ['adminTotalUploads', 'adminRejectedUploads', 'adminRevokedCertificates', 'adminActiveTlsCertificates']
+        .forEach(function(key) { if (elements[key]) elements[key].textContent = '0'; });
+    }
+
+    function renderAuthState() {
+      const authenticated = Boolean(state.token);
+      document.body.classList.toggle('authenticated', authenticated);
+      elements.authShell.classList.toggle('hidden', authenticated);
+      elements.appShell.classList.toggle('hidden', !authenticated);
+      if (authenticated) {
+        elements.profileUser.textContent = state.user || '-';
+        elements.doctorId.value = state.role === 'doctor' ? state.user || '' : '';
+        renderRoleAwareUi();
+        if (state.role === 'doctor' && hasPermission('CERT_VIEW_OWN')) {
+          fetchOwnCertificate();
+        } else if (state.role === 'admin') {
+          clearDoctorCertificateUi('Not applicable — administrators manage doctor certificates but do not own a doctor signing certificate.');
+        } else {
+          clearDoctorCertificateUi('Not applicable for this account role.');
+        }
+        const defaultView = getDefaultViewForCurrentUser();
+        switchView(canAccessView(state.currentView) ? state.currentView : defaultView, { silent: true });
+      } else {
+        stopAuditTimer();
+        elements.authPassword.value = '';
+        elements.sidebar.classList.remove('open');
+        clearUserSpecificUi('No authenticated doctor');
+        renderRoleAwareUi();
+      }
+    }
+
+    function logout(options = {}) {
+      invalidateAccountRequests();
+      state.token = null;
+      state.user = null;
+      state.userId = null;
+      state.role = null;
+      state.permissions = [];
+      state.currentView = null;
+      selectedFile = null;
+      selectedHash = null;
+      resetUploadForm();
+      clearUserSpecificUi('No authenticated doctor');
+      if (!options.silent) toast(options.expired ? 'error' : 'info', options.message || (options.expired ? 'Session expired. Please sign in again.' : 'Signed out. Token cleared from memory.'));
+      renderAuthState();
+    }
+
+    function isAdmin() {
+      return state.role === 'admin';
+    }
+
+    function renderRoleAwareUi() {
+      elements.profileRoleLabel.textContent = !state.token ? 'Not authenticated' : state.role === 'admin' ? 'Authenticated Admin' : state.role === 'auditor' ? 'Authenticated Auditor' : state.role === 'doctor' ? 'Authenticated Doctor' : 'Authenticated ' + String(state.role || 'User');
+      elements.adminOnly.forEach(function(item) {
+        item.classList.toggle('hidden', !(isAdmin() && (!item.dataset.requiredPermission || hasPermission(item.dataset.requiredPermission))));
+      });
+      elements.doctorOnly.forEach(function(item) {
+        const permitted = state.role === 'doctor' && (!item.dataset.requiredPermission || hasPermission(item.dataset.requiredPermission));
+        item.classList.toggle('hidden', !permitted);
+      });
+      elements.navButtons.forEach(function(button) {
+        button.classList.toggle('hidden', !canAccessView(button.dataset.view));
+      });
+      Array.from(document.querySelectorAll('.view')).forEach(function(section) {
+        const view = section.id.replace(/^view-/, '');
+        section.classList.toggle('hidden', Boolean(state.token) && !canAccessView(view));
+      });
+    }
+
+    async function fetchOwnCertificate() {
+      if (!state.token || state.role !== 'doctor' || !hasPermission('CERT_VIEW_OWN')) {
+        clearDoctorCertificateUi(state.role === 'admin'
+          ? 'Not applicable — administrators manage doctor certificates but do not own a doctor signing certificate.'
+          : state.token ? 'Not applicable for this account role.' : 'No authenticated doctor');
+        return;
+      }
+      if (state.certificateRequestController) state.certificateRequestController.abort();
+      const controller = new AbortController();
+      state.certificateRequestController = controller;
+      const snapshot = captureAuthenticationSnapshot();
+      clearDoctorCertificateUi('Loading doctor certificate...', 'loading');
+      try {
+        const result = await apiFetch('/api/uploads/certificate/own', { signal: controller.signal });
+        if (!isAuthenticationSnapshotCurrent(snapshot, true)) return;
+        const cert = result.certificate;
+        if (!cert) {
+          clearDoctorCertificateUi('No active doctor signing certificate has been issued.', 'inactive');
+          return;
+        }
+        const status = String(cert.status || 'unknown').toLowerCase();
+        if (status !== 'active') {
+          const statusMessages = {
+            revoked: 'Document-signing certificate is revoked.',
+            expired: 'Document-signing certificate is expired.',
+            rotated: 'Document-signing certificate was rotated and is no longer active.'
+          };
+          clearDoctorCertificateUi(statusMessages[status] || 'No active doctor signing certificate has been issued.', 'inactive');
+          elements.certificateIdentity.dataset.status = status;
+          elements.certificateIdentity.dataset.serialNumber = cert.serial_number || '';
+          return;
+        }
+        state.doctorCertificate = cert;
+        elements.certificateIdentity.textContent = cert.serial_number + ' · ACTIVE · expires ' + cert.expires_at;
+        elements.certificateIdentity.title = cert.subject || '';
+        elements.certificateIdentity.dataset.certificateId = String(cert.id || '');
+        elements.certificateIdentity.dataset.serialNumber = cert.serial_number || '';
+        elements.certificateIdentity.dataset.fingerprint = cert.public_key_fingerprint || '';
+        elements.certificateIdentity.dataset.status = status;
+        elements.certificateIdentity.dataset.expiresAt = cert.expires_at || '';
+        elements.certificateIdentity.dataset.owner = state.user || '';
+        elements.certificateIdentity.dataset.subject = cert.subject || '';
+        elements.doctorCertificateCard.classList.remove('loading', 'error', 'inactive');
+        elements.doctorCertificateCard.classList.add('success');
+        elements.doctorCertificateCard.removeAttribute('aria-busy');
+      } catch (error) {
+        if (!isAuthenticationSnapshotCurrent(snapshot, true) || isStaleAuthenticationError(error)) return;
+        clearDoctorCertificateUi(error.status === 403 ? 'Doctor certificate access is not authorized for this account.' : 'Unable to load the doctor signing certificate.', 'error');
+      } finally {
+        if (state.certificateRequestController === controller) state.certificateRequestController = null;
+      }
+    }
+
+    async function apiFetch(endpoint, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      const headers = new Headers(options.headers || {});
+      const requestSnapshot = captureAuthenticationSnapshot();
+      const requestToken = state.token;
+      const accountScoped = options.accountScoped !== false && Boolean(requestToken);
+      if (requestToken) {
+        headers.set('Authorization', 'Bearer ' + requestToken);
+      }
+      if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
+        headers.set('Content-Type', 'application/json');
+      }
+      if ((method === 'POST' || method === 'PUT') && !headers.has('x-nonce')) {
+        const replay = createAntiReplayHeaders();
+        headers.set('x-nonce', replay.nonce);
+        headers.set('x-timestamp', replay.timestamp);
+      }
+      let response;
+      try {
+        const fetchOptions = Object.assign({}, options, { method: method, headers: headers });
+        delete fetchOptions.accountScoped;
+        response = await fetch(endpoint, fetchOptions);
+      } catch (error) {
+        if (error?.name === 'AbortError' || (accountScoped && !isAuthenticationSnapshotCurrent(requestSnapshot))) {
+          throw staleAuthenticationError();
+        }
+        throw new Error('Network request failed.');
+      }
+      const payload = await parseResponseJson(response);
+      if (accountScoped && !isAuthenticationSnapshotCurrent(requestSnapshot)) {
+        throw staleAuthenticationError();
+      }
+      if (!response.ok) {
+        const error = new Error(payload.error || payload.message || 'Request failed.');
+        error.payload = payload;
+        error.status = response.status;
+        if (response.status === 401 && accountScoped && isAuthenticationSnapshotCurrent(requestSnapshot)) {
+          logout({ expired: true, message: 'Authentication expired or was rejected. Please sign in again.' });
+        }
+        throw error;
+      }
+      return payload;
+    }
+
+    async function apiFetchWithFallback(primary, fallback, options = {}) {
+      try {
+        return await apiFetch(primary, options);
+      } catch (error) {
+        if (fallback && isMissingRouteError(error)) {
+          return await apiFetch(fallback, options);
+        }
+        throw error;
+      }
+    }
+
+    function isMissingRouteError(error) {
+      const message = String(error.message || '').toLowerCase();
+      return message.includes('not found') || message.includes('cannot ') || message.includes('request failed');
+    }
+
+    async function parseResponseJson(response) {
+      try {
+        return await response.json();
+      } catch {
+        return {};
+      }
+    }
+
+    function createAntiReplayHeaders() {
+      return {
+        nonce: crypto.randomUUID(),
+        timestamp: Math.floor(Date.now() / 1000).toString()
+      };
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      elements.dropZone.classList.remove('dragover');
+      if (event.dataTransfer.files.length > 0) {
+        elements.fileInput.files = event.dataTransfer.files;
+        handleFile(event.dataTransfer.files[0]);
+      }
+    }
+
+    async function handleFile(file) {
+      selectedFile = file;
+      try {
+        const buffer = await file.arrayBuffer();
+        selectedHash = await sha256Hex(buffer);
+        elements.fileName.textContent = file.name;
+        elements.fileSize.textContent = formatFileSize(file.size);
+        elements.fileHash.textContent = selectedHash;
+        elements.fileMeta.classList.add('visible');
+        toast('success', 'SHA-256 hash computed in browser.');
+      } catch {
+        selectedFile = null;
+        selectedHash = null;
+        toast('error', 'Unable to read or hash the selected file.');
+      }
+    }
+
+    function formatFileSize(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) {
+        return '';
+      }
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let size = bytes;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+      return size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1) + ' ' + units[unitIndex];
+    }
+
+    function resetUploadForm() {
+      selectedFile = null;
+      selectedHash = null;
+      elements.uploadForm.reset();
+      elements.fileInput.value = '';
+      elements.fileName.textContent = '';
+      elements.fileSize.textContent = '';
+      elements.fileHash.textContent = '';
+      elements.fileMeta.classList.remove('visible');
+      elements.ledgerHash.textContent = '';
+      elements.ledgerCopy.classList.add('hidden');
+      elements.ledgerEntryCard.classList.add('hidden');
+      elements.doctorId.value = state.user || '';
+      setTodayMax();
+      renderPipeline(null);
+    }
+
+    async function sha256Hex(buffer) {
+      const digest = await crypto.subtle.digest('SHA-256', buffer);
+      return Array.from(new Uint8Array(digest)).map(function(byte) {
+        return byte.toString(16).padStart(2, '0');
+      }).join('');
+    }
+
+    async function submitUpload(event) {
+      event.preventDefault();
+      if (!selectedFile || !selectedHash) {
+        toast('error', 'Select a file before submitting.');
+        return;
+      }
+      if (!elements.uploadForm.reportValidity()) {
+        return;
+      }
+      const replay = createAntiReplayHeaders();
+      const metadata = getUploadMetadata();
+      setButtonLoading(elements.submitUpload, true, 'Signing & Uploading');
+      renderPipeline(null);
+      elements.ledgerHash.textContent = '';
+      elements.ledgerCopy.classList.add('hidden');
+      elements.ledgerEntryCard.classList.add('hidden');
+      try {
+        const signPayload = Object.assign({}, metadata, {
+          hash: selectedHash,
+          nonce: replay.nonce,
+          timestamp: replay.timestamp
+        });
+        const signatureResult = await apiFetch('/api/uploads/demo-sign', {
+          method: 'POST',
+          headers: { 'x-nonce': replay.nonce, 'x-timestamp': replay.timestamp },
+          body: JSON.stringify(signPayload)
+        });
+        const formData = new FormData();
+        formData.append('file', selectedFile, selectedFile.name);
+        formData.append('patientId', metadata.patientId);
+        formData.append('reportType', metadata.reportType);
+        formData.append('reportDate', metadata.reportDate);
+        formData.append('doctorId', metadata.doctorId);
+        formData.append('hospitalCode', metadata.hospitalCode);
+        formData.append('department', metadata.department);
+        formData.append('signature', signatureResult.signatureB64);
+        formData.append('certificatePem', signatureResult.certificatePem);
+        formData.append('browserHash', selectedHash);
+        const uploadResult = await apiFetchWithFallback('/api/uploads/upload', '/api/uploads', {
+          method: 'POST',
+          headers: { 'x-nonce': replay.nonce, 'x-timestamp': replay.timestamp },
+          body: formData
+        });
+        await animatePipeline(uploadResult);
+        const ledgerHash = extractLedgerHash(uploadResult);
+        if (ledgerHash) {
+          elements.ledgerEntryCard.classList.remove('hidden');
+          await typewriter(elements.ledgerHash, ledgerHash, 20);
+          elements.ledgerCopy.classList.remove('hidden');
+        }
+        toast('success', 'Medical report approved and stored.');
+      } catch (error) {
+        if (error.payload && (error.payload.verification || error.payload.votes)) {
+          await animatePipeline(error.payload);
+        }
+        toast('error', error.message);
+      } finally {
+        setButtonLoading(elements.submitUpload, false);
+      }
+    }
+
+    function getUploadMetadata() {
+      return {
+        patientId: elements.patientId.value.trim(),
+        reportType: elements.reportType.value,
+        reportDate: elements.reportDate.value,
+        doctorId: elements.doctorId.value.trim(),
+        hospitalCode: elements.hospitalCode.value,
+        department: elements.department.value.trim()
+      };
+    }
+
+    function renderPipeline(voteMap) {
+      elements.pipeline.innerHTML = '';
+      pipelineNodes.forEach(function(node) {
+        const item = document.createElement('div');
+        const hasVote = voteMap && Object.prototype.hasOwnProperty.call(voteMap, node);
+        const stateClass = hasVote ? (voteMap[node] ? 'pass' : 'fail') : '';
+        item.className = 'pipeline-node ' + stateClass;
+        const status = document.createElement('i');
+        status.className = 'pipeline-status ' + (hasVote ? (voteMap[node] ? 'fa-solid fa-check' : 'fa-solid fa-xmark') : 'fa-regular fa-circle');
+        const copy = document.createElement('div');
+        copy.className = 'pipeline-copy';
+        const label = document.createElement('strong');
+        label.textContent = pipelineCopy[node].label;
+        const description = document.createElement('span');
+        description.textContent = pipelineCopy[node].description;
+        copy.append(label, description);
+        const resultIcon = document.createElement('i');
+        resultIcon.className = 'pipeline-result-icon ' + (hasVote ? (voteMap[node] ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark') : 'fa-regular fa-circle');
+        item.append(status, copy, resultIcon);
+        elements.pipeline.appendChild(item);
+      });
+      renderPipelineResult(voteMap);
+    }
+
+    function renderPipelineResult(voteMap) {
+      if (!elements.pipelineResultPanel) {
+        return;
+      }
+      const complete = Boolean(voteMap) && pipelineNodes.every(function(node) {
+        return Object.prototype.hasOwnProperty.call(voteMap, node);
+      });
+      if (!complete) {
+        elements.pipelineResultPanel.className = 'pipeline-result-panel hidden';
+        elements.pipelineResultPanel.innerHTML = '';
+        return;
+      }
+      const passed = pipelineNodes.every(function(node) { return voteMap[node] !== false; });
+      elements.pipelineResultPanel.className = 'pipeline-result-panel ' + (passed ? 'pass' : 'fail');
+      elements.pipelineResultPanel.innerHTML = passed
+        ? '<i class="fa-solid fa-shield-halved"></i><div><strong>All verifications passed</strong><span>Your report is safe to be recorded.</span></div>'
+        : '<i class="fa-solid fa-triangle-exclamation"></i><div><strong>Verification failed</strong><span>One or more checks blocked ledger recording.</span></div>';
+    }
+
+    async function animatePipeline(result) {
+      const votes = normalizeVotes(result);
+      const running = {};
+      renderPipeline(running);
+      for (const node of pipelineNodes) {
+        await delay(200);
+        running[node] = votes[node] !== false;
+        renderPipeline(running);
+      }
+    }
+
+    function normalizeVotes(result) {
+      const map = {};
+      pipelineNodes.forEach(function(node) { map[node] = true; });
+      const raw = result.votes || result.verification?.votes || result.evaluation || result.evaluationMap || {};
+      if (Array.isArray(raw)) {
+        raw.forEach(function(vote) {
+          const name = vote.nodeName || vote.node || vote.name || vote.stage;
+          if (name) {
+            map[name] = !(vote.vote === 'REJECT' || vote.status === 'FAIL' || vote.approved === false || vote.pass === false);
+          }
+        });
+      } else if (raw && typeof raw === 'object') {
+        Object.keys(raw).forEach(function(key) {
+          const value = raw[key];
+          map[key] = !(value === false || value === 'REJECT' || value === 'FAIL' || value?.vote === 'REJECT' || value?.status === 'FAIL' || value?.approved === false);
+        });
+      }
+      return map;
+    }
+
+    function extractLedgerHash(result) {
+      return result.fabric?.transactionId || result.ledger?.transactionId || result.fabric?.recordId || result.ledger?.recordId || '';
+    }
+
+    async function typewriter(target, text, interval) {
+      target.textContent = '';
+      for (let index = 0; index < text.length; index += 1) {
+        target.textContent += text[index];
+        await delay(interval);
+      }
+    }
+
+    function delay(ms) {
+      return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+
+    function switchView(view, options = {}) {
+      if (!state.token) return;
+      if (!canAccessView(view)) {
+        if (!options.silent) toast('error', 'This account is not authorized to access that view.');
+        view = getDefaultViewForCurrentUser();
+      }
+      if (!view || !canAccessView(view)) return;
+      state.currentView = view;
+      Array.from(document.querySelectorAll('.view')).forEach(function(section) {
+        section.classList.toggle('active', section.id === 'view-' + view && canAccessView(view));
+      });
+      elements.navButtons.forEach(function(button) {
+        button.classList.toggle('active', button.dataset.view === view);
+      });
+      elements.sidebar.classList.remove('open');
+      if (view !== 'audit') {
+        stopAuditTimer();
+      }
+      if (view === 'records') {
+        setRecordsMode(state.recordsMode, { refresh: true });
+      }
+      if (view === 'audit') {
+        fetchAudit();
+      }
+      if (view === 'admin') {
+        fetchAdminDashboard();
+      }
+      if (view === 'ledger') {
+        checkFabricNetwork();
+      }
+    }
+
+    async function fetchRecords() {
+      const snapshot = captureAuthenticationSnapshot();
+      elements.recordsBody.innerHTML = tableLoadingRow(9);
+      try {
+        const result = await apiFetchWithFallback('/api/uploads/my-records', '/api/uploads');
+        if (!isAuthenticationSnapshotCurrent(snapshot)) return;
+        const uploads = result.records || result.uploads || result.items || [];
+        renderRecords(uploads);
+      } catch (error) {
+        if (!isAuthenticationSnapshotCurrent(snapshot) || isStaleAuthenticationError(error)) return;
+        elements.recordsBody.innerHTML = tableEmptyRow(9, 'Unable to load records.');
+        toast('error', error.message);
+      }
+    }
+
+    function canUsePatientViewer() {
+      return state.role === 'doctor'
+        && hasPermission('REPORT_READ_ALL_CLINICAL_METADATA')
+        && hasPermission('REPORT_VIEW_ALL_CLINICAL_FILES');
+    }
+
+    function setRecordsMode(mode, options = {}) {
+      const nextMode = mode === 'patient' && canUsePatientViewer() ? 'patient' : 'mine';
+      state.recordsMode = nextMode;
+      const mineSelected = nextMode === 'mine';
+      elements.myRecordsTab.classList.toggle('active', mineSelected);
+      elements.myRecordsTab.setAttribute('aria-selected', String(mineSelected));
+      elements.patientViewerTab.classList.toggle('active', !mineSelected);
+      elements.patientViewerTab.setAttribute('aria-selected', String(!mineSelected));
+      elements.myRecordsPanel.classList.toggle('hidden', !mineSelected);
+      elements.patientViewerPanel.classList.toggle('hidden', mineSelected);
+      if (mineSelected && (options.refresh || options.userInitiated !== false)) fetchRecords();
+      if (!mineSelected) elements.patientRecordSearchId.focus();
+    }
+
+    function clearPatientRecordSearch(options = {}) {
+      if (state.patientSearchController) {
+        state.patientSearchController.abort();
+        state.patientSearchController = null;
+      }
+      state.clinicalRecords = [];
+      if (!options.preserveInput) elements.patientRecordSearchId.value = '';
+      elements.clinicalResultsSummary.textContent = options.message || 'Enter one exact patient ID to search. No patient list is loaded automatically.';
+      elements.clinicalRecordsBody.innerHTML = tableEmptyRow(7, 'No patient search performed.');
+      closeClinicalViewer();
+    }
+
+    async function searchPatientRecords(event) {
+      if (event) event.preventDefault();
+      if (!canUsePatientViewer()) {
+        toast('error', 'A verified doctor account is required for the clinical viewer.');
+        return;
+      }
+      const patientId = elements.patientRecordSearchId.value.trim().toUpperCase();
+      elements.patientRecordSearchId.value = patientId;
+      if (!/^PAT-[0-9]{4}$/.test(patientId)) {
+        state.clinicalRecords = [];
+        elements.clinicalRecordsBody.innerHTML = tableEmptyRow(7, 'Enter an exact patient ID in PAT-0000 format.');
+        elements.clinicalResultsSummary.textContent = 'Search rejected locally: an exact PAT-0000 identifier is required.';
+        return;
+      }
+      if (state.patientSearchController) state.patientSearchController.abort();
+      closeClinicalViewer();
+      const controller = new AbortController();
+      state.patientSearchController = controller;
+      const snapshot = captureAuthenticationSnapshot();
+      state.clinicalRecords = [];
+      elements.clinicalResultsSummary.textContent = 'Searching exact patient ' + patientId + '…';
+      elements.clinicalRecordsBody.innerHTML = tableLoadingRow(7);
+      setButtonLoading(elements.patientRecordSearchSubmit, true, 'Searching');
+      try {
+        const result = await apiFetch('/api/uploads/patient/' + encodeURIComponent(patientId) + '/clinical-records', { signal: controller.signal });
+        if (!isAuthenticationSnapshotCurrent(snapshot, true) || state.patientSearchController !== controller) return;
+        state.clinicalRecords = Array.isArray(result.records) ? result.records : [];
+        renderClinicalRecords(patientId, state.clinicalRecords);
+      } catch (error) {
+        if (!isAuthenticationSnapshotCurrent(snapshot, true) || isStaleAuthenticationError(error) || state.patientSearchController !== controller) return;
+        state.clinicalRecords = [];
+        elements.clinicalRecordsBody.innerHTML = tableEmptyRow(7, 'No results are available for this exact patient search.');
+        elements.clinicalResultsSummary.textContent = 'Search failed for ' + patientId + '.';
+        toast('error', error.message);
+      } finally {
+        if (state.patientSearchController === controller) {
+          state.patientSearchController = null;
+          setButtonLoading(elements.patientRecordSearchSubmit, false);
+        }
+      }
+    }
+
+    function renderClinicalRecords(patientId, records) {
+      elements.clinicalRecordsBody.innerHTML = '';
+      elements.clinicalResultsSummary.textContent = records.length + ' record' + (records.length === 1 ? '' : 's') + ' found for exact patient ' + patientId + '. Results are read only.';
+      if (!records.length) {
+        elements.clinicalRecordsBody.innerHTML = tableEmptyRow(7, 'No records found for this exact patient ID.');
+        return;
+      }
+      records.forEach(function(record) {
+        const row = document.createElement('tr');
+        const reportCell = document.createElement('td');
+        const reportTitle = document.createElement('strong');
+        reportTitle.textContent = record.reportType || 'Medical report';
+        const reportDetails = document.createElement('small');
+        reportDetails.textContent = 'Upload #' + record.uploadId + ' · ' + (record.reportDate || '-');
+        reportCell.append(reportTitle, reportDetails);
+        row.appendChild(reportCell);
+
+        const clinicalCell = document.createElement('td');
+        clinicalCell.appendChild(textLines([
+          'Patient: ' + (record.patientId || '-'),
+          'Hospital: ' + (record.hospitalCode || '-'),
+          'Department: ' + (record.department || '-')
+        ]));
+        row.appendChild(clinicalCell);
+
+        const uploaderCell = document.createElement('td');
+        uploaderCell.appendChild(textLines([
+          record.uploader?.username || '-',
+          record.uploadedAt || '-'
+        ]));
+        row.appendChild(uploaderCell);
+
+        const certificateCell = document.createElement('td');
+        const serial = record.signingCertificate?.serialNumber || '-';
+        const fingerprint = record.signingCertificate?.fingerprint || '-';
+        certificateCell.appendChild(textLines([
+          'Serial: ' + (serial.length > 14 ? serial.slice(0, 14) + '…' : serial),
+          'Fingerprint: ' + (fingerprint.length > 16 ? fingerprint.slice(0, 16) + '…' : fingerprint),
+          'At acceptance: ' + (record.signingCertificate?.statusAtAcceptance || '-'),
+          'Current: ' + (record.signingCertificate?.currentStatus || '-')
+        ], true));
+        row.appendChild(certificateCell);
+
+        const fabricCell = document.createElement('td');
+        fabricCell.appendChild(textLines([
+          record.fabric?.status || 'NOT_COMMITTED',
+          record.fabric?.transactionId ? 'Tx: ' + record.fabric.transactionId.slice(0, 14) + '…' : 'Tx: -',
+          'Block: ' + (record.fabric?.blockNumber || '-')
+        ], true));
+        row.appendChild(fabricCell);
+
+        const accessCell = document.createElement('td');
+        const accessBadge = document.createElement('span');
+        const badge = clinicalAccessBadge(record.accessMode);
+        accessBadge.className = 'access-badge ' + badge.className;
+        accessBadge.textContent = badge.label;
+        const readOnlyBadge = document.createElement('span');
+        readOnlyBadge.className = 'readonly-badge';
+        readOnlyBadge.textContent = 'READ ONLY';
+        accessCell.append(accessBadge, readOnlyBadge);
+        row.appendChild(accessCell);
+
+        const actionCell = document.createElement('td');
+        const actions = document.createElement('div');
+        actions.className = 'clinical-actions';
+        actions.appendChild(clinicalActionButton('clinical-view-record', record.uploadId, 'fa-eye', 'View'));
+        actions.appendChild(clinicalActionButton('clinical-verify-record', record.uploadId, 'fa-shield-halved', 'Verify'));
+        if (record.uploadedByCurrentUser && record.canDownload) {
+          actions.appendChild(clinicalActionButton('clinical-download-own', record.uploadId, 'fa-download', 'Download'));
+        }
+        actionCell.appendChild(actions);
+        row.appendChild(actionCell);
+        elements.clinicalRecordsBody.appendChild(row);
+      });
+    }
+
+    function textLines(lines, mono = false) {
+      const wrapper = document.createElement('div');
+      if (mono) wrapper.className = 'mono';
+      lines.forEach(function(line) {
+        const item = document.createElement('div');
+        item.textContent = line;
+        wrapper.appendChild(item);
+      });
+      return wrapper;
+    }
+
+    function clinicalAccessBadge(accessMode) {
+      if (accessMode === 'OWNER') return { className: 'owner', label: 'YOUR REPORT' };
+      if (accessMode === 'ASSIGNED_CLINICAL_VIEWER') return { className: 'assigned', label: 'ASSIGNED PATIENT' };
+      return { className: 'cross', label: 'CROSS-DOCTOR READ ONLY' };
+    }
+
+    function clinicalActionButton(className, uploadId, icon, label) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'secondary-btn ' + className;
+      button.dataset.id = uploadId;
+      button.setAttribute('aria-label', label + ' clinical record ' + uploadId);
+      button.innerHTML = '<i class="fa-solid ' + icon + '"></i><span>' + label + '</span>';
+      return button;
+    }
+
+    function renderRecords(records) {
+      elements.recordsBody.innerHTML = '';
+      if (!records.length) {
+        elements.recordsBody.innerHTML = tableEmptyRow(9, 'No records found.');
+        return;
+      }
+      records.forEach(function(item) {
+        const row = document.createElement('tr');
+        const hash = item.sha256 || item.sha256_hash || item.hash || '';
+        const signed = item.signature_valid === 1 || item.signature_valid === true || item.signed === true;
+        appendCell(row, item.id || item.uploadId || '-');
+        appendCell(row, item.patient || item.patient_id || item.patientId || '-');
+        appendCell(row, item.report_type || item.reportType || '-');
+        appendCell(row, item.report_date || item.reportDate || '-');
+        appendCell(row, item.hospital_code || item.hospitalCode || '-');
+        const hashCell = document.createElement('td');
+        const hashRow = document.createElement('div');
+        hashRow.className = 'mono-row';
+        const hashText = document.createElement('span');
+        hashText.className = 'truncate-mono';
+        hashText.textContent = hash ? hash.slice(0, 12) + '...' : '-';
+        hashText.id = 'record-hash-' + (item.id || item.uploadId);
+        hashText.dataset.fullHash = hash;
+        const copy = document.createElement('button');
+        copy.className = 'icon-btn copy-btn';
+        copy.type = 'button';
+        copy.dataset.copyText = hash;
+        copy.setAttribute('aria-label', 'Copy record hash');
+        copy.innerHTML = '<i class="fa-solid fa-copy"></i>';
+        hashRow.append(hashText, copy);
+        hashCell.appendChild(hashRow);
+        row.appendChild(hashCell);
+        const signedCell = document.createElement('td');
+        signedCell.innerHTML = signed ? '<i class="fa-solid fa-shield-halved shield-ok" title="Signed"></i>' : '<i class="fa-solid fa-shield-virus shield-bad" title="Signature invalid"></i>';
+        row.appendChild(signedCell);
+        appendCell(row, item.uploaded_at || item.created_at || item.createdAt || '-');
+        const actionCell = document.createElement('td');
+        const button = document.createElement('button');
+        button.className = 'icon-btn verify-record';
+        button.type = 'button';
+        button.dataset.id = item.id || item.uploadId;
+        button.setAttribute('aria-label', 'Verify record');
+        button.innerHTML = '<i class="fa-solid fa-eye"></i>';
+        actionCell.appendChild(button);
+        const download = document.createElement('button');
+        download.className = 'icon-btn download-record';
+        download.type = 'button';
+        download.dataset.id = item.id || item.uploadId;
+        download.setAttribute('aria-label', 'Secure download');
+        download.innerHTML = '<i class="fa-solid fa-download"></i>';
+        actionCell.appendChild(download);
+        row.appendChild(actionCell);
+        elements.recordsBody.appendChild(row);
+      });
+    }
+
+    function clinicalRecordById(id) {
+      return state.clinicalRecords.find(function(record) {
+        return String(record.uploadId) === String(id);
+      });
+    }
+
+    async function openClinicalRecord(id) {
+      const record = clinicalRecordById(id);
+      if (!record || !record.canView || !canUsePatientViewer()) {
+        toast('error', 'Clinical record view permission is not available.');
+        return;
+      }
+      closeClinicalViewer();
+      const controller = new AbortController();
+      state.clinicalViewController = controller;
+      const snapshot = captureAuthenticationSnapshot();
+      const requestToken = snapshot.token;
+      elements.clinicalViewTitle.textContent = 'Clinical Report #' + record.uploadId + ' — Read Only';
+      renderClinicalViewMetadata(record);
+      elements.clinicalViewModal.classList.add('open');
+      elements.clinicalViewFrame.removeAttribute('src');
+      try {
+        const response = await fetch('/api/uploads/' + encodeURIComponent(id) + '/clinical-view', {
+          headers: { Authorization: 'Bearer ' + requestToken },
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        if (!isAuthenticationSnapshotCurrent(snapshot, true) || state.clinicalViewController !== controller) return;
+        if (!response.ok) {
+          const payload = await parseResponseJson(response);
+          if (response.status === 401 && isAuthenticationSnapshotCurrent(snapshot, true)) {
+            logout({ expired: true, message: 'Authentication expired or was rejected. Please sign in again.' });
+          }
+          const error = new Error(payload.error || payload.message || 'Clinical view denied.');
+          error.status = response.status;
+          throw error;
+        }
+        const blob = await response.blob();
+        if (!isAuthenticationSnapshotCurrent(snapshot, true) || state.clinicalViewController !== controller) return;
+        const objectUrl = URL.createObjectURL(blob);
+        if (!isAuthenticationSnapshotCurrent(snapshot, true) || state.clinicalViewController !== controller) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        state.clinicalObjectUrl = objectUrl;
+        elements.clinicalViewFrame.src = objectUrl;
+      } catch (error) {
+        if (error?.name === 'AbortError' || !isAuthenticationSnapshotCurrent(snapshot, true) || state.clinicalViewController !== controller) return;
+        closeClinicalViewer({ abortRequest: false });
+        toast('error', error.message || 'Clinical view failed.');
+      } finally {
+        if (state.clinicalViewController === controller) state.clinicalViewController = null;
+      }
+    }
+
+    function renderClinicalViewMetadata(record) {
+      elements.clinicalViewMetadata.innerHTML = '';
+      const fields = [
+        ['Patient', record.patientId],
+        ['Report', record.reportType + ' · ' + record.reportDate],
+        ['Original uploader', record.uploader?.username],
+        ['Access', clinicalAccessBadge(record.accessMode).label + ' · READ ONLY'],
+        ['Hospital', record.hospitalCode],
+        ['Department', record.department],
+        ['Certificate serial', record.signingCertificate?.serialNumber],
+        ['Fabric status', record.fabric?.status]
+      ];
+      fields.forEach(function(field) {
+        const box = document.createElement('div');
+        const label = document.createElement('small');
+        const value = document.createElement('strong');
+        label.textContent = field[0];
+        value.textContent = field[1] || '-';
+        box.append(label, value);
+        elements.clinicalViewMetadata.appendChild(box);
+      });
+    }
+
+    function closeClinicalViewer(options = {}) {
+      if (options.abortRequest !== false && state.clinicalViewController) {
+        state.clinicalViewController.abort();
+        state.clinicalViewController = null;
+      }
+      if (state.clinicalObjectUrl) {
+        URL.revokeObjectURL(state.clinicalObjectUrl);
+        state.clinicalObjectUrl = null;
+      }
+      if (elements.clinicalViewFrame) elements.clinicalViewFrame.removeAttribute('src');
+      if (elements.clinicalViewMetadata) elements.clinicalViewMetadata.innerHTML = '';
+      if (elements.clinicalViewTitle) elements.clinicalViewTitle.textContent = 'Clinical Report — Read Only';
+      if (elements.clinicalViewModal) elements.clinicalViewModal.classList.remove('open');
+    }
+
+    async function verifyClinicalRecord(id) {
+      const record = clinicalRecordById(id);
+      if (!record || !canUsePatientViewer()) {
+        toast('error', 'Clinical verification permission is not available.');
+        return;
+      }
+      elements.modalBody.innerHTML = '<div class="verify-banner ok"><i class="fa-solid fa-spinner fa-spin"></i> Verifying Fabric commitment</div>';
+      elements.verifyModal.classList.add('open');
+      try {
+        const result = await apiFetch('/api/uploads/' + encodeURIComponent(id) + '/clinical-verify');
+        elements.modalBody.innerHTML = '';
+        const match = result.result === 'MATCH';
+        const banner = document.createElement('div');
+        banner.className = 'verify-banner ' + (match ? 'ok' : 'fail');
+        banner.textContent = result.result || 'NOT COMMITTED';
+        elements.modalBody.appendChild(banner);
+        elements.modalBody.appendChild(checkRow('Fabric commitment', match, document.createTextNode(match
+          ? 'The on-chain commitment matches the current local record metadata.'
+          : 'The commitment could not be confirmed as an exact match.')));
+        const details = document.createElement('pre');
+        details.className = 'json-block open';
+        details.textContent = JSON.stringify(result, null, 2);
+        elements.modalBody.appendChild(details);
+      } catch (error) {
+        if (isStaleAuthenticationError(error)) return;
+        closeModal();
+        toast('error', fabricUserMessage(error));
+      }
+    }
+
+    async function openVerificationModal(id) {
+      elements.modalBody.innerHTML = '<div class="verify-banner ok"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+      elements.verifyModal.classList.add('open');
+      try {
+        const result = await apiFetch('/api/uploads/' + encodeURIComponent(id) + '/verify');
+        renderVerification(result);
+      } catch (error) {
+        closeModal();
+        toast('error', error.message);
+      }
+    }
+
+    function renderVerification(result) {
+      const encryptionOk = Boolean(result.encryption_ok ?? result.checks?.encryptionIntegrity);
+      const hashMatch = Boolean(result.hash_match ?? result.checks?.hashMatches);
+      const signatureOk = Boolean(result.signature_ok ?? result.checks?.signatureValid);
+      const verified = Boolean(result.verified ?? (encryptionOk && hashMatch && signatureOk));
+      const storedHash = result.stored_hash || result.hashes?.stored || '';
+      const recalculatedHash = result.recalculated_hash || result.database_hash || result.hashes?.recalculated || '';
+      elements.modalBody.innerHTML = '';
+      const banner = document.createElement('div');
+      banner.className = 'verify-banner ' + (verified ? 'ok' : 'fail');
+      banner.textContent = verified ? 'VERIFIED' : 'INTEGRITY FAILURE';
+      elements.modalBody.appendChild(banner);
+      elements.modalBody.appendChild(checkRow('Encryption Integrity', encryptionOk, document.createTextNode('AES-GCM authentication tag accepted.')));
+      const hashDetail = document.createElement('div');
+      hashDetail.className = 'hash-pair';
+      hashDetail.appendChild(hashBox('Stored Hash', storedHash));
+      hashDetail.appendChild(hashBox('Recalculated Database Hash', recalculatedHash));
+      elements.modalBody.appendChild(checkRow('Hash Match', hashMatch, hashDetail));
+      elements.modalBody.appendChild(checkRow('Signature Valid', signatureOk, document.createTextNode('Doctor certificate signature verification result.')));
+      const metadata = document.createElement('pre');
+      metadata.className = 'json-block open';
+      metadata.textContent = JSON.stringify(result, null, 2);
+      elements.modalBody.appendChild(metadata);
+    }
+
+    function checkRow(label, ok, detail) {
+      const row = document.createElement('div');
+      row.className = 'check-row';
+      const icon = document.createElement('i');
+      icon.className = ok ? 'fa-solid fa-circle-check ok' : 'fa-solid fa-circle-xmark fail';
+      const title = document.createElement('strong');
+      title.textContent = label;
+      row.append(icon, title, detail);
+      return row;
+    }
+
+    function hashBox(label, hash) {
+      const box = document.createElement('div');
+      box.className = 'hash-box';
+      const small = document.createElement('span');
+      small.className = 'section-kicker';
+      small.textContent = label;
+      const row = document.createElement('div');
+      row.className = 'mono-row';
+      const code = document.createElement('span');
+      code.className = 'mono';
+      code.textContent = hash || '-';
+      const copy = document.createElement('button');
+      copy.className = 'icon-btn copy-btn';
+      copy.type = 'button';
+      copy.dataset.copyText = hash || '';
+      copy.setAttribute('aria-label', 'Copy hash');
+      copy.innerHTML = '<i class="fa-solid fa-copy"></i>';
+      row.append(code, copy);
+      box.append(small, row);
+      return box;
+    }
+
+    function closeModal() {
+      elements.verifyModal.classList.remove('open');
+    }
+
+    async function fetchAudit() {
+      const snapshot = captureAuthenticationSnapshot();
+      elements.auditBody.innerHTML = tableLoadingRow(6);
+      try {
+        const result = await apiFetchWithFallback('/api/audit', '/api/audit-logs');
+        if (!isAuthenticationSnapshotCurrent(snapshot)) return;
+        const logs = result.logs || result.audit || result.items || [];
+        renderAudit(logs);
+      } catch (error) {
+        if (!isAuthenticationSnapshotCurrent(snapshot) || isStaleAuthenticationError(error)) return;
+        elements.auditBody.innerHTML = tableEmptyRow(6, 'Unable to load audit log.');
+        toast('error', error.message);
+      }
+    }
+
+    async function verifyAuditChain() {
+      try {
+        const result = await apiFetch('/api/audit-logs/verify');
+        toast('success', 'Audit chain VALID: ' + result.entriesChecked + ' entries checked.');
+      } catch (error) {
+        toast('error', 'Audit chain COMPROMISED: ' + (error.payload?.reason || error.message));
+      }
+    }
+
+    function renderAudit(logs) {
+      elements.auditBody.innerHTML = '';
+      if (!logs.length) {
+        elements.auditBody.innerHTML = tableEmptyRow(6, 'No audit entries found.');
+        return;
+      }
+      logs.forEach(function(item, index) {
+        const row = document.createElement('tr');
+        if (String(item.status).toLowerCase() === 'failure') {
+          row.classList.add('failure-row');
+        }
+        appendCell(row, item.id || index + 1);
+        appendCell(row, item.action || '-');
+        const statusCell = document.createElement('td');
+        const status = String(item.status || 'info').toLowerCase();
+        const failed = status === 'failure';
+        statusCell.innerHTML = '<span class="badge ' + (failed ? 'danger' : 'success') + '"><span class="status-dot"></span>' + (failed ? 'Failure' : 'Success') + '</span>';
+        row.appendChild(statusCell);
+        appendCell(row, item.ip_address || item.ipAddress || '-');
+        const detailsCell = document.createElement('td');
+        detailsCell.className = 'details-cell';
+        detailsCell.innerHTML = '<span><i class="fa-solid fa-code"></i> Details</span>';
+        const block = document.createElement('pre');
+        block.className = 'json-block';
+        block.textContent = JSON.stringify(item.details || {}, null, 2);
+        detailsCell.appendChild(block);
+        row.appendChild(detailsCell);
+        appendCell(row, item.created_at || item.timestamp || item.createdAt || '-');
+        elements.auditBody.appendChild(row);
+      });
+    }
+
+    async function fetchAdminDashboard() {
+      if (!isAdmin()) {
+        toast('error', 'Admin access required.');
+        return;
+      }
+
+      elements.adminUploadsBody.innerHTML = tableLoadingRow(7);
+      elements.rejectedUploadsBody.innerHTML = tableLoadingRow(6);
+      elements.revokedCertificatesBody.innerHTML = tableLoadingRow(4);
+      elements.tlsCertificatesBody.innerHTML = tableLoadingRow(6);
+      const snapshot = captureAuthenticationSnapshot();
+
+      try {
+        const results = await Promise.all([
+          apiFetch('/api/admin/uploads'),
+          apiFetch('/api/admin/rejected-uploads'),
+          fetchRevokedCertificates(),
+          apiFetch('/api/admin/tls-certificates')
+        ]);
+        if (!isAuthenticationSnapshotCurrent(snapshot) || !isAdmin()) return;
+        const uploads = results[0].uploads || results[0].items || [];
+        const rejectedUploads = results[1].rejectedUploads || results[1].rejected_uploads || results[1].items || [];
+        const revokedCertificates = results[2];
+        const tlsCertificates = results[3].certificates || [];
+
+        renderAdminUploads(uploads);
+        renderRejectedUploads(rejectedUploads);
+        renderRevokedCertificates(revokedCertificates);
+        renderTlsCertificates(tlsCertificates);
+        elements.adminTotalUploads.textContent = uploads.length;
+        elements.adminRejectedUploads.textContent = rejectedUploads.length;
+        elements.adminRevokedCertificates.textContent = revokedCertificates.length;
+        elements.adminActiveTlsCertificates.textContent = tlsCertificates.filter(function(item) { return item.status === 'ACTIVE'; }).length;
+      } catch (error) {
+        if (!isAuthenticationSnapshotCurrent(snapshot) || isStaleAuthenticationError(error)) return;
+        if (error.status === 403) {
+          toast('error', 'Admin access required.');
+        } else {
+          toast('error', error.message);
+        }
+        elements.adminUploadsBody.innerHTML = tableEmptyRow(7, 'Unable to load uploads.');
+        elements.rejectedUploadsBody.innerHTML = tableEmptyRow(6, 'Unable to load rejected uploads.');
+        elements.revokedCertificatesBody.innerHTML = tableEmptyRow(4, 'Unable to load revoked certificates.');
+        elements.tlsCertificatesBody.innerHTML = tableEmptyRow(6, 'Unable to load mTLS certificates.');
+      }
+    }
+
+    async function fetchRevokedCertificates() {
+      const result = await apiFetch('/api/admin/revoked-certificates');
+      return result.revokedCertificates || result.revoked_certificates || result.items || [];
+    }
+
+    async function revokeCertificate(event) {
+      event.preventDefault();
+      const serialNumber = elements.revokeSerialNumber.value.trim();
+      const reason = elements.revokeReason.value.trim();
+      const otp = elements.revokeOtp.value.trim();
+      if (!serialNumber) {
+        toast('error', 'Certificate serial number is required.');
+        return;
+      }
+
+      setButtonLoading(elements.submitRevokeCertificate, true, 'Revoking');
+      try {
+        await apiFetch('/api/admin/revoke-certificate', {
+          method: 'POST',
+          body: JSON.stringify({ serialNumber, reason, otp })
+        });
+        elements.revokeCertificateForm.reset();
+        toast('success', 'Certificate revoked.');
+        fetchAdminDashboard();
+      } catch (error) {
+        if (error.status === 403) {
+          toast('error', 'Admin access required.');
+        } else {
+          toast('error', error.message);
+        }
+      } finally {
+        setButtonLoading(elements.submitRevokeCertificate, false);
+      }
+    }
+
+    async function issueCertificate(event) {
+      event.preventDefault();
+      const username = elements.issueCertificateUsername.value.trim();
+      setButtonLoading(elements.submitIssueCertificate, true, 'Issuing');
+      try {
+        await apiFetch('/api/admin/issue-certificate', { method: 'POST', body: JSON.stringify({ username }) });
+        elements.issueCertificateForm.reset(); toast('success', 'Unique doctor certificate issued.'); fetchAdminDashboard();
+      } catch (error) { toast('error', error.message); }
+      finally { setButtonLoading(elements.submitIssueCertificate, false); }
+    }
+
+    function downloadIssuanceResponse(username, response) {
+      const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = username + '-mtls-issuance.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function issueTlsCertificate(event) {
+      event.preventDefault();
+      const username = elements.issueTlsUsername.value.trim().toLowerCase();
+      const csrPem = elements.issueTlsCsr.value.trim();
+      setButtonLoading(elements.submitIssueTlsCertificate, true, 'Issuing');
+      try {
+        const response = await apiFetch('/api/admin/tls-certificates/issue', { method: 'POST', body: JSON.stringify({ username, csrPem }) });
+        downloadIssuanceResponse(username, response);
+        elements.issueTlsCertificateForm.reset();
+        toast('success', 'mTLS certificate issued from the client CSR. Public response downloaded for client installation.');
+        fetchAdminDashboard();
+      } catch (error) { toast('error', error.message); }
+      finally { setButtonLoading(elements.submitIssueTlsCertificate, false); }
+    }
+
+    async function revokeTlsCertificate(event) {
+      event.preventDefault();
+      const serial = elements.revokeTlsSerial.value.trim();
+      setButtonLoading(elements.submitRevokeTlsCertificate, true, 'Revoking');
+      try {
+        await apiFetch('/api/admin/tls-certificates/' + encodeURIComponent(serial) + '/revoke', {
+          method: 'POST',
+          body: JSON.stringify({ reason: elements.revokeTlsReason.value.trim(), otp: elements.revokeTlsOtp.value.trim() })
+        });
+        elements.revokeTlsCertificateForm.reset();
+        toast('success', 'Selected doctor mTLS identity revoked. Document-signing certificates were not changed.');
+        fetchAdminDashboard();
+      } catch (error) { toast('error', error.message); }
+      finally { setButtonLoading(elements.submitRevokeTlsCertificate, false); }
+    }
+
+    async function rotateTlsCertificate(event) {
+      event.preventDefault();
+      const serial = elements.rotateTlsSerial.value.trim();
+      setButtonLoading(elements.submitRotateTlsCertificate, true, 'Rotating');
+      try {
+        const response = await apiFetch('/api/admin/tls-certificates/' + encodeURIComponent(serial) + '/rotate', {
+          method: 'POST',
+          body: JSON.stringify({ csrPem: elements.rotateTlsCsr.value.trim(), otp: elements.rotateTlsOtp.value.trim() })
+        });
+        downloadIssuanceResponse(response.certificate.username, response);
+        elements.rotateTlsCertificateForm.reset();
+        toast('success', 'mTLS identity rotated to the new client-generated key.');
+        fetchAdminDashboard();
+      } catch (error) { toast('error', error.message); }
+      finally { setButtonLoading(elements.submitRotateTlsCertificate, false); }
+    }
+
+    async function assignPatient(event) {
+      event.preventDefault();
+      const doctorUsername = elements.assignDoctorUsername.value.trim();
+      const patientId = elements.assignPatientId.value.trim();
+      setButtonLoading(elements.submitAssignPatient, true, 'Assigning');
+      try {
+        await apiFetch('/api/admin/assign-patient', { method: 'POST', body: JSON.stringify({ doctorUsername, patientId }) });
+        elements.assignPatientForm.reset(); toast('success', 'Patient assigned to doctor.');
+      } catch (error) { toast('error', error.message); }
+      finally { setButtonLoading(elements.submitAssignPatient, false); }
+    }
+
+    async function unrevokeCertificate(serialNumber) {
+      if (!serialNumber) {
+        return;
+      }
+
+      try {
+        await apiFetch('/api/admin/revoked-certificates/' + encodeURIComponent(serialNumber), {
+          method: 'DELETE'
+        });
+        toast('success', 'Certificate unrevoked.');
+        fetchAdminDashboard();
+      } catch (error) {
+        if (error.status === 403) {
+          toast('error', 'Admin access required.');
+        } else {
+          toast('error', error.message);
+        }
+      }
+    }
+
+    function renderRevokedCertificates(certificates) {
+      elements.revokedCertificatesBody.innerHTML = '';
+      if (!certificates.length) {
+        elements.revokedCertificatesBody.innerHTML = tableEmptyRow(4, 'No revoked certificates.');
+        return;
+      }
+
+      certificates.forEach(function(item) {
+        const row = document.createElement('tr');
+        appendMonoCell(row, item.serial_number || item.serialNumber || '-');
+        appendCell(row, item.reason || '-');
+        appendCell(row, item.revoked_at || item.revokedAt || '-');
+        const actionCell = document.createElement('td');
+        const button = document.createElement('button');
+        button.className = 'secondary-btn unrevoke-certificate';
+        button.type = 'button';
+        button.dataset.serialNumber = item.serial_number || item.serialNumber || '';
+        button.innerHTML = '<i class="fa-solid fa-rotate-left"></i><span>Unrevoke</span>';
+        actionCell.appendChild(button);
+        row.appendChild(actionCell);
+        elements.revokedCertificatesBody.appendChild(row);
+      });
+    }
+
+    function renderTlsCertificates(certificates) {
+      elements.tlsCertificatesBody.innerHTML = '';
+      if (!certificates.length) {
+        elements.tlsCertificatesBody.innerHTML = tableEmptyRow(6, 'No doctor mTLS client identities enrolled.');
+        return;
+      }
+      certificates.forEach(function(item) {
+        const row = document.createElement('tr');
+        appendCell(row, item.username || '-');
+        appendMonoCell(row, item.serialNumber || '-');
+        appendMonoCell(row, item.fingerprintSha256 || '-');
+        const statusCell = document.createElement('td');
+        const active = item.status === 'ACTIVE';
+        statusCell.innerHTML = '<span class="badge ' + (active ? 'success' : 'danger') + '"><span class="status-dot"></span>' + String(item.status || 'UNKNOWN') + '</span>';
+        row.appendChild(statusCell);
+        appendCell(row, item.expiresAt || '-');
+        appendCell(row, item.revocationReason || '-');
+        elements.tlsCertificatesBody.appendChild(row);
+      });
+    }
+
+    function renderRejectedUploads(rejectedUploads) {
+      elements.rejectedUploadsBody.innerHTML = '';
+      if (!rejectedUploads.length) {
+        elements.rejectedUploadsBody.innerHTML = tableEmptyRow(6, 'No rejected uploads.');
+        return;
+      }
+
+      rejectedUploads.forEach(function(item) {
+        const row = document.createElement('tr');
+        appendCell(row, item.id || '-');
+        appendCell(row, item.username || '-');
+        appendCell(row, item.failed_stage || item.failedStage || '-');
+        appendCell(row, item.reason || '-');
+        appendMonoCell(row, item.file_hash || item.fileHash || '-');
+        appendCell(row, item.created_at || item.createdAt || item.timestamp || '-');
+        elements.rejectedUploadsBody.appendChild(row);
+      });
+    }
+
+    function renderAdminUploads(uploads) {
+      elements.adminUploadsBody.innerHTML = '';
+      if (!uploads.length) {
+        elements.adminUploadsBody.innerHTML = tableEmptyRow(7, 'No uploads found.');
+        return;
+      }
+
+      uploads.forEach(function(item) {
+        const row = document.createElement('tr');
+        appendCell(row, item.id || '-');
+        appendCell(row, item.username || '-');
+        appendCell(row, item.patient_id || item.patientId || '-');
+        appendCell(row, item.report_type || item.reportType || '-');
+        appendCell(row, item.doctor_id || item.doctorId || '-');
+        appendMonoCell(row, item.signer_serial || item.signerSerial || '-');
+        appendCell(row, item.created_at || item.createdAt || item.uploaded_at || '-');
+        elements.adminUploadsBody.appendChild(row);
+      });
+    }
+
+    function toggleAuditLive() {
+      if (elements.auditLive.checked) {
+        fetchAudit();
+        auditTimer = setInterval(fetchAudit, 10000);
+        toast('info', 'Live audit refresh enabled.');
+      } else {
+        stopAuditTimer();
+        toast('info', 'Live audit refresh disabled.');
+      }
+    }
+
+    function stopAuditTimer() {
+      if (auditTimer) {
+        clearInterval(auditTimer);
+        auditTimer = null;
+      }
+      if (elements.auditLive) {
+        elements.auditLive.checked = false;
+      }
+    }
+
+    async function checkFabricNetwork(showToast = true) {
+      const snapshot = captureAuthenticationSnapshot();
+      elements.ledgerLoader.classList.add('active');
+      try {
+        const result = await apiFetch('/api/blockchain/status');
+        if (!isAuthenticationSnapshotCurrent(snapshot)) return;
+        elements.fabricPlatform.textContent = result.platform || 'Hyperledger Fabric';
+        elements.fabricChannel.textContent = result.channel || 'medicalchannel';
+        elements.fabricChaincode.textContent = result.chaincode || 'medicalrecords';
+        elements.fabricOrganizations.textContent = (result.organizations || []).map(function(org) { return org.name + ' / ' + org.mspId; }).join(' · ') || 'Hospital / Org1MSP · Laboratory / Org2MSP';
+        elements.fabricPolicy.textContent = 'Hospital AND Laboratory';
+        elements.fabricConnection.textContent = result.connected ? 'CONNECTED' : 'UNAVAILABLE';
+        elements.fabricTotalRecords.textContent = result.totalFabricMedicalRecords ?? 0;
+        elements.fabricCommittedUploads.textContent = result.committedLocalUploads ?? 0;
+        elements.fabricUncommittedUploads.textContent = result.uncommittedLocalUploads ?? 0;
+        elements.fabricFailedUploads.textContent = result.failedLocalUploads ?? 0;
+        renderLedgerStatus(true, 'FABRIC CONNECTED', 'Gateway TLS, medicalchannel, and medicalrecords chaincode are accessible.');
+        await loadFabricRecords(snapshot);
+        if (!isAuthenticationSnapshotCurrent(snapshot)) return;
+        if (showToast) toast('success', 'Hyperledger Fabric network is available.');
+      } catch (error) {
+        if (!isAuthenticationSnapshotCurrent(snapshot) || isStaleAuthenticationError(error)) return;
+        elements.fabricConnection.textContent = 'UNAVAILABLE';
+        renderLedgerStatus(false, 'FABRIC UNAVAILABLE', fabricUserMessage(error));
+        if (showToast) toast('error', fabricUserMessage(error));
+      } finally {
+        if (isAuthenticationSnapshotCurrent(snapshot)) elements.ledgerLoader.classList.remove('active');
+      }
+    }
+
+    async function loadFabricRecords(snapshot = captureAuthenticationSnapshot()) {
+      const result = await apiFetchWithFallback('/api/uploads/my-records', '/api/uploads');
+      if (!isAuthenticationSnapshotCurrent(snapshot)) return;
+      renderFabricRecords(result.records || result.uploads || result.items || []);
+    }
+
+    function renderFabricRecords(records) {
+      elements.fabricRecordsBody.innerHTML = '';
+      if (!records.length) {
+        elements.fabricRecordsBody.innerHTML = tableEmptyRow(7, 'No MedAuth uploads found.');
+        return;
+      }
+      records.forEach(function(item) {
+        const row = document.createElement('tr');
+        const uploadId = item.id || item.uploadId;
+        const status = item.fabric_status || item.fabricStatus || 'NOT_COMMITTED';
+        const recordId = item.fabric_record_id || item.fabricRecordId || '';
+        const transactionId = item.fabric_transaction_id || item.fabricTransactionId || '';
+        appendCell(row, uploadId);
+        appendCell(row, status);
+        appendFabricReferenceCell(row, recordId, 'Copy Fabric record ID');
+        appendFabricReferenceCell(row, transactionId, 'Copy Fabric transaction ID');
+        appendCell(row, item.fabric_block_number || item.fabricBlockNumber || '-');
+        appendCell(row, item.fabric_validation_code || item.fabricValidationCode || '-');
+        const action = document.createElement('td');
+        if (status === 'COMMITTED') {
+          const verify = document.createElement('button');
+          verify.className = 'secondary-btn';
+          verify.type = 'button';
+          verify.innerHTML = '<i class="fa-solid fa-shield-halved"></i><span>Verify</span>';
+          verify.addEventListener('click', async function() {
+            try {
+              const result = await apiFetch('/api/blockchain/verify/' + encodeURIComponent(uploadId));
+              toast(result.result === 'MATCH' ? 'success' : 'error', result.result === 'MATCH' ? 'On-chain commitment matches the local medical record.' : 'On-chain commitment differs from the local medical record.');
+            } catch (error) { toast('error', fabricUserMessage(error)); }
+          });
+          action.appendChild(verify);
+        } else {
+          action.textContent = status === 'FAILED' ? 'Retry available to admin' : 'Record has not been committed to Fabric';
+        }
+        row.appendChild(action);
+        elements.fabricRecordsBody.appendChild(row);
+      });
+    }
+
+    function appendFabricReferenceCell(row, value, label) {
+      const cell = document.createElement('td');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'mono-row';
+      const text = document.createElement('span');
+      text.className = 'truncate-mono';
+      text.textContent = value ? value.slice(0, 12) + '…' : '-';
+      wrapper.appendChild(text);
+      if (value) {
+        const copy = document.createElement('button');
+        copy.className = 'icon-btn copy-btn';
+        copy.type = 'button';
+        copy.dataset.copyText = value;
+        copy.setAttribute('aria-label', label);
+        copy.innerHTML = '<i class="fa-solid fa-copy"></i>';
+        wrapper.appendChild(copy);
+      }
+      cell.appendChild(wrapper);
+      row.appendChild(cell);
+    }
+
+    async function verifyLedger() {
+      elements.ledgerLoader.classList.add('active');
+      try {
+        const result = await apiFetch('/api/blockchain/verify');
+        renderLedgerStatus(result.valid, result.valid ? 'VALID' : 'TAMPERING DETECTED', result.valid
+          ? result.committedRecordsChecked + ' Fabric commitments match their local MedAuth records.'
+          : result.mismatches + ' commitment mismatches were detected.');
+        toast(result.valid ? 'success' : 'error', result.valid ? 'All committed Fabric records match.' : 'On-chain commitment differs from a local medical record.');
+      } catch (error) {
+        if (error.payload?.valid === false) {
+          renderLedgerStatus(false, 'TAMPERING DETECTED', (error.payload.mismatches || 0) + ' commitment mismatches were detected.');
+        } else {
+          renderLedgerStatus(false, 'FABRIC UNAVAILABLE', fabricUserMessage(error));
+        }
+        toast('error', fabricUserMessage(error));
+      } finally {
+        elements.ledgerLoader.classList.remove('active');
+      }
+    }
+
+    async function retryFabricCommitment() {
+      if (!isAdmin()) return toast('error', 'Admin access required.');
+      const uploadId = window.prompt('Enter the failed upload ID to retry:');
+      if (!uploadId) return;
+      try {
+        const result = await apiFetch('/api/blockchain/retry/' + encodeURIComponent(uploadId), { method: 'POST', body: '{}' });
+        toast('success', 'Fabric commitment is ' + result.status + '.');
+        checkFabricNetwork(false);
+      } catch (error) { toast('error', fabricUserMessage(error)); }
+    }
+
+    function fabricUserMessage(error) {
+      const code = error.payload?.code || '';
+      const messages = {
+        FABRIC_NETWORK_UNAVAILABLE: 'Fabric network is not running.',
+        FABRIC_TLS_FAILURE: 'Fabric Gateway TLS connection failed.',
+        FABRIC_IDENTITY_MISSING: 'Fabric identity is missing.',
+        FABRIC_IDENTITY_KEY_MISSING: 'Fabric identity private key is missing.',
+        FABRIC_CHAINCODE_NOT_DEPLOYED: 'Chaincode has not been deployed.',
+        FABRIC_ENDORSEMENT_POLICY_NOT_SATISFIED: 'Hospital and Laboratory endorsement was not satisfied.',
+        FABRIC_ON_CHAIN_RECORD_MISSING: 'Record has not been committed to Fabric.',
+        FABRIC_COMMITMENT_MISMATCH: 'On-chain commitment differs from the local medical record.'
+      };
+      return messages[code] || error.message || 'Fabric operation failed.';
+    }
+
+    function renderLedgerStatus(valid, title, message) {
+      elements.ledgerStatus.className = 'status-banner ' + (valid ? 'valid' : 'compromised');
+      elements.ledgerStatus.innerHTML = '<div class="ledger-hero ' + (valid ? 'valid' : 'compromised') + '"><div class="ledger-hero-icon"><i class="fa-solid ' + (valid ? 'fa-shield-halved' : 'fa-triangle-exclamation') + '" aria-hidden="true"></i><i class="fa-solid ' + (valid ? 'fa-check' : 'fa-exclamation') + ' ledger-hero-mark" aria-hidden="true"></i></div><div class="ledger-hero-copy"><strong>' + escapeHtml(title) + '</strong><p>' + escapeHtml(message) + '</p><p>Fabric stores tamper-evident commitments; encrypted medical files remain off-chain.</p></div></div>';
+    }
+
+    function handleDocumentClick(event) {
+      const copyButton = event.target.closest('.copy-btn');
+      if (copyButton) {
+        const value = copyButton.dataset.copyText || document.getElementById(copyButton.dataset.copyTarget)?.textContent || '';
+        copyText(value);
+        return;
+      }
+      const verifyButton = event.target.closest('.verify-record');
+      if (verifyButton) {
+        openVerificationModal(verifyButton.dataset.id);
+        return;
+      }
+      const downloadButton = event.target.closest('.download-record');
+      if (downloadButton) {
+        secureDownload(downloadButton.dataset.id);
+        return;
+      }
+      const clinicalViewButton = event.target.closest('.clinical-view-record');
+      if (clinicalViewButton) {
+        openClinicalRecord(clinicalViewButton.dataset.id);
+        return;
+      }
+      const clinicalVerifyButton = event.target.closest('.clinical-verify-record');
+      if (clinicalVerifyButton) {
+        verifyClinicalRecord(clinicalVerifyButton.dataset.id);
+        return;
+      }
+      const clinicalDownloadButton = event.target.closest('.clinical-download-own');
+      if (clinicalDownloadButton) {
+        const record = clinicalRecordById(clinicalDownloadButton.dataset.id);
+        if (record?.uploadedByCurrentUser && record.canDownload) secureDownload(clinicalDownloadButton.dataset.id);
+        else toast('error', 'Cross-doctor downloads are not permitted.');
+        return;
+      }
+      const unrevokeButton = event.target.closest('.unrevoke-certificate');
+      if (unrevokeButton) {
+        unrevokeCertificate(unrevokeButton.dataset.serialNumber);
+        return;
+      }
+      const detailsCell = event.target.closest('.details-cell');
+      if (detailsCell) {
+        const block = detailsCell.querySelector('.json-block');
+        if (block) {
+          block.classList.toggle('open');
+        }
+      }
+    }
+
+    async function secureDownload(id) {
+      try {
+        const response = await fetch('/api/uploads/' + encodeURIComponent(id) + '/download', { headers: { Authorization: 'Bearer ' + state.token } });
+        if (!response.ok) { const payload = await parseResponseJson(response); throw new Error(payload.error || 'Download denied'); }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob); const link = document.createElement('a');
+        link.href = url; link.download = 'medical-report-' + id; link.click(); URL.revokeObjectURL(url);
+        toast('success', 'Authorized file decrypted and downloaded.');
+      } catch (error) { toast('error', error.message); }
+    }
+
+    async function copyText(text) {
+      if (!text || text === '-') {
+        toast('error', 'Nothing to copy.');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('success', 'Copied to clipboard.');
+      } catch {
+        toast('error', 'Clipboard write failed.');
+      }
+    }
+
+    function toast(variant, message) {
+      const item = document.createElement('div');
+      item.className = 'toast ' + variant;
+      const icon = document.createElement('i');
+      icon.className = variant === 'success' ? 'fa-solid fa-circle-check' : variant === 'error' ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-circle-info';
+      const text = document.createElement('div');
+      text.textContent = message;
+      const close = document.createElement('button');
+      close.className = 'toast-close';
+      close.type = 'button';
+      close.setAttribute('aria-label', 'Dismiss notification');
+      close.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+      close.addEventListener('click', function() { item.remove(); });
+      item.append(icon, text, close);
+      elements.toastStack.appendChild(item);
+      setTimeout(function() { item.remove(); }, 4000);
+    }
+
+    function setButtonLoading(button, loading, label) {
+      if (loading) {
+        button.dataset.originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>' + escapeHtml(label || 'Loading') + '</span>';
+      } else {
+        button.disabled = false;
+        if (button.dataset.originalHtml) {
+          button.innerHTML = button.dataset.originalHtml;
+          delete button.dataset.originalHtml;
+        }
+      }
+    }
+
+    function appendCell(row, value) {
+      const cell = document.createElement('td');
+      cell.textContent = value == null || value === '' ? '-' : String(value);
+      row.appendChild(cell);
+      return cell;
+    }
+
+    function appendMonoCell(row, value) {
+      const cell = document.createElement('td');
+      const code = document.createElement('span');
+      code.className = 'mono';
+      code.textContent = value == null || value === '' ? '-' : String(value);
+      cell.appendChild(code);
+      row.appendChild(cell);
+      return cell;
+    }
+
+    function tableLoadingRow(columns) {
+      return '<tr><td colspan="' + columns + '"><span class="badge info"><i class="fa-solid fa-spinner fa-spin"></i> Loading</span></td></tr>';
+    }
+
+    function tableEmptyRow(columns, text) {
+      return '<tr><td colspan="' + columns + '">' + escapeHtml(text) + '</td></tr>';
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, function(character) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character];
+      });
+    }
+  </script>
+</body>
+</html>
